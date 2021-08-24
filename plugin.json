@@ -1,0 +1,57 @@
+{
+    "id": "mattermost-plugin-hackerone",
+    "name": "Hackerone Plugin",
+    "description": "Hackerone plugin for Mattermost.",
+    "homepage_url": "https://github.com/srkgupta/mattermost-plugin-hackerone",
+    "support_url": "https://github.com/mattermost/mattermost-plugin-hackerone/issues",
+    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-hackerone/releases/tag/v0.1.0",
+    "icon_path": "assets/icon.svg",
+    "version": "0.1.0",
+    "min_server_version": "5.12.0",
+    "server": {
+        "executables": {
+            "linux-amd64": "server/dist/plugin-linux-amd64",
+            "darwin-amd64": "server/dist/plugin-darwin-amd64",
+            "darwin-arm64": "server/dist/plugin-darwin-arm64",
+            "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+        }
+    },
+    "webapp": {
+        "bundle_path": "webapp/dist/main.js"
+    },
+    "settings_schema": {
+        "header": "The Hackerone plugin for Mattermost allows users to subscribe to Hackerone notifications, stay up-to-date with all the reports submitted on the Hackerone platform, and other common Hackerone actions - directly from Mattermost. \n \n Instructions for setup are [available here](https://github.com/srkgupta/mattermost-plugin-hackerone#configuration).",
+        "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/srkgupta/mattermost-plugin-hackerone).",
+        "settings": [
+            {
+                "key": "HackeroneProgramHandle",
+                "display_name": "Hackerone Program Handle:",
+                "type": "text",
+                "help_text": "Handle of your Hackerone program",
+                "placeholder": "Type the handle of your Hackerone program"
+            },
+            {
+                "key": "HackeroneApiIdentifier",
+                "display_name": "Hackerone API Identifier:",
+                "type": "text",
+                "help_text": "Type the Hackerone API Identifier here. [Instructions available here](https://docs.hackerone.com/programs/api-tokens.html)",
+                "placeholder": "Paste the Hackerone API Identifier here"
+            },
+            {
+                "key": "HackeroneApiKey",
+                "display_name": "Hackerone API Token:",
+                "type": "text",
+                "help_text": "Type the Hackerone API Token here. [Instructions available here](https://docs.hackerone.com/programs/api-tokens.html)",
+                "placeholder": "Paste the Hackerone API Token here"
+            },
+            {
+                "key": "HackeronePollIntervalSeconds",
+                "display_name": "Poll Interval (in seconds):",
+                "type": "number",
+                "help_text": "Interval at which new data will be polled via the Hackerone API. Default: 30 seconds. Minimum: 10 seconds. Max: 3600 seconds.",
+                "placeholder": "Seconds",
+                "default": 30                
+            }
+        ]
+    }
+}
