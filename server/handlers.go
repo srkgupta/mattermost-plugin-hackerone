@@ -2,49 +2,10 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
-
-func (p *Plugin) executeActivities(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
-	count := "10"
-	if 0 < len(split) {
-		s := split[0]
-		i, err := strconv.Atoi(s)
-		if err != nil || i > 100 || i < 1 {
-			count = "10"
-		} else {
-			count = s
-		}
-	}
-	activitiesListString := ""
-	activities, err := p.fetchActivities(count)
-	if err != nil {
-		msg := fmt.Sprintf("Something went wrong while getting the activities from Hackerone API. Error: %s\n", err.Error())
-		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		for _, activity := range activities {
-			reportLink := "[report " + activity.Attributes.ReportID + "](https://hackerone.com/reports/" + activity.Attributes.ReportID + ")"
-			actorLink := "[" + activity.Relationships.Actor.Data.Attributes.Name + "](https://hackerone.com/" + activity.Relationships.Actor.Data.Attributes.Username + ")"
-			activityLink := strings.Replace(getActivityType(activity.ActivityType), "report", reportLink, -1)
-			activitiesListString += fmt.Sprintf(
-				"> %s %s at %s\n",
-				actorLink,
-				activityLink,
-				parseTime(activity.Attributes.CreatedAt),
-			)
-			if len(activity.Attributes.Message) > 1 {
-				activitiesListString += "\n```\n" + activity.Attributes.Message + "\n```\n"
-			}
-		}
-		_ = p.sendPost(args, activitiesListString, nil)
-	}
-
-	return &model.CommandResponse{}, nil
-}
 
 func (p *Plugin) executeStats(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
 	stats, err := p.fetchStats()
@@ -214,7 +175,7 @@ func contains(arr []string, str string) bool {
 	return false
 }
 
-func parseTime(input string) string {
+func (p *Plugin) parseTime(input string) string {
 	layout := "Mon Jan 02 2006 3:04 PM"
 	t, _ := time.Parse(time.RFC3339, input)
 	return t.Format(layout)

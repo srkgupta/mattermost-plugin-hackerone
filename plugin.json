@@ -48,6 +48,30 @@
                 "help_text": "Interval at which new data will be polled via the Hackerone API. Default: 30 seconds. Minimum: 10 seconds. Max: 3600 seconds.",
                 "placeholder": "Seconds",
                 "default": 30                
+            },
+            {
+                "key": "HackeroneSLANew",
+                "display_name": "SLA for New Reports (in days):",
+                "type": "number",
+                "help_text": "Define the SLA for the expected timeline (in days) for status to be changed for New reports. For example, if the report is not changed from New state to any other state for more than 3 days, it will be shown under missed deadline reports.",
+                "placeholder": "Days",
+                "default": 3                
+            },
+            {
+                "key": "HackeroneSLABounty",
+                "display_name": "SLA for Bounty (in days):",
+                "type": "number",
+                "help_text": "Define the SLA for the expected timeline (in days) for bounty to be rewarded for Triaged reports. For example, if a triaged report was not rewarded any bounty for more than 7 days, it will be shown under missed deadline reports.",
+                "placeholder": "Days",
+                "default": 7                
+            },
+            {
+                "key": "HackeroneSLATriaged",
+                "display_name": "SLA for Triaged Reports (in days):",
+                "type": "number",
+                "help_text": "Define the SLA for the expected timeline (in days) for status to be changed for Triaged reports. For example, if the report is not changed from Triaged to Resolved for more than 15 days, it will be shown under missed deadline reports.",
+                "placeholder": "Days",
+                "default": 15                
             }
         ]
     }

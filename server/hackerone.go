@@ -35,6 +35,9 @@ func (p *Plugin) doHTTPRequest(method string, url string, body io.Reader) (*http
 
 type Activities struct {
 	Activities []Activity `json:"data"`
+	Meta       struct {
+		MaxUpdatedAt string `json:"max_updated_at"`
+	}
 }
 
 type Activity struct {
@@ -57,32 +60,36 @@ type Activity struct {
 	}
 }
 
-func (p *Plugin) fetchActivities(count string) ([]Activity, error) {
+func (p *Plugin) fetchActivities(count string, last_updated_at string) (Activities, error) {
 	activitiesEndpoint := "incremental/activities?handle=" + p.getConfiguration().HackeroneProgramHandle + "&page[size]=" + count
 
+	if len(last_updated_at) > 1 {
+		activitiesEndpoint += "&updated_at_after=" + last_updated_at
+	}
 	resp, err := p.doHTTPRequest(http.MethodGet, activitiesEndpoint, nil)
+	errorMsg := "Something went wrong while getting the activities from Hackerone API: " + activitiesEndpoint
 	if err != nil {
-		p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
-		return nil, err
+		p.API.LogWarn(errorMsg, "error", err.Error())
+		return Activities{}, errors.Wrap(err, errorMsg)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK || resp.Body == nil {
-		p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
-		return nil, err
+		p.API.LogWarn(errorMsg, "error", err.Error())
+		return Activities{}, errors.Wrap(err, errorMsg)
 	}
 
 	var response Activities
 	decoder := json.NewDecoder(resp.Body)
 	if err = decoder.Decode(&response); err != nil {
-		p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
-		return nil, err
+		p.API.LogWarn(errorMsg, "error", err.Error())
+		return Activities{}, errors.Wrap(err, errorMsg)
 	}
 	if len(response.Activities) < 1 {
-		p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
-		return nil, err
+		p.API.LogWarn(errorMsg, "error", err.Error())
+		return Activities{}, errors.Wrap(err, errorMsg)
 	}
-	return response.Activities, err
+	return response, errors.Wrap(err, errorMsg)
 }
 
 type Reports struct {

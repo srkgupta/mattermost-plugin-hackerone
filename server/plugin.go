@@ -37,6 +37,8 @@ type Plugin struct {
 	configuration *configuration
 
 	httpClient http.Client
+
+	scheduledTasks []*ScheduledTask
 }
 
 // ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.

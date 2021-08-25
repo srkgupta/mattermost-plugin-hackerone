@@ -22,6 +22,9 @@ type configuration struct {
 	HackeroneApiIdentifier       string
 	HackeroneApiKey              string
 	HackeronePollIntervalSeconds int
+	HackeroneSLANew              int
+	HackeroneSLABounty           int
+	HackeroneSLATriaged          int
 }
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
@@ -46,6 +49,16 @@ func (c *configuration) IsValid() error {
 		return errors.New("poll interval should be minimum of 10 seconds")
 	} else if c.HackeronePollIntervalSeconds > 3600 {
 		return errors.New("poll interval should be a maximum of 3600 seconds")
+	}
+
+	if c.HackeroneSLANew < 1 {
+		return errors.New("SLA for New Reports should be minimum of 1 day")
+	}
+	if c.HackeroneSLABounty < 1 {
+		return errors.New("SLA for Bounty should be minimum of 1 day")
+	}
+	if c.HackeroneSLATriaged < 1 {
+		return errors.New("SLA for Triaged Reports should be minimum of 1 day")
 	}
 
 	return nil
@@ -114,10 +127,15 @@ func (p *Plugin) OnConfigurationChange() error {
 		return errors.Wrap(err, "failed to register command")
 	}
 
+	// Cancel all scheduled recurring task whenever config is changed:
+	p.cancelHackeroneRecurring()
+
 	config := p.getConfiguration()
 	if err := config.IsValid(); err != nil {
 		return err
 	}
+
+	p.createHackeroneRecurring()
 
 	p.API.LogInfo("Reloaded configuration")
 
