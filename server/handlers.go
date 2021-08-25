@@ -60,6 +60,65 @@ func (p *Plugin) executeStats(args *model.CommandArgs, split []string) (*model.C
 	return &model.CommandResponse{}, nil
 }
 
+func (p *Plugin) executeSubscriptions(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
+	if 0 >= len(split) {
+		msg := "Invalid subscribe command. Available commands are 'list', 'add' and 'delete'."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+
+	command := split[0]
+
+	switch {
+	case command == "check":
+		return p.handleSubscriptionsList(args)
+	case command == "add":
+		return p.handleSubscribesAdd(args)
+	case command == "delete":
+		return p.handleUnsubscribe(args)
+	default:
+		msg := "Unknown subcommand for subscribe command. Available commands are 'list', 'add' and 'delete'."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
+func (p *Plugin) handleSubscribesAdd(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	err := p.Subscribe(args.UserId, args.ChannelId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while subscribing. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	} else {
+		msg := "Subscription successful! The channel will now receive notifications whenever there are any activity on your Hackerone program."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
+func (p *Plugin) handleUnsubscribe(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	err := p.Unsubscribe(args.ChannelId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while unsubscribing. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	} else {
+		msg := "Successfully unsubscribed! The channel will not receive notifications whenever there are any activity on your Hackerone program."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
+func (p *Plugin) handleSubscriptionsList(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while checking for subscriptions. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	} else {
+		msg := ""
+		if len(subs) > 0 {
+			msg = "The channel is subscribed to receive Hackerone notifications."
+		} else {
+			msg = "The channel is not subscribed to receive any Hackerone notifications."
+		}
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
 func (p *Plugin) executeReport(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
 	if 0 >= len(split) {
 		msg := "Report Id should be specified while fetching the report information"
@@ -93,16 +152,23 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	}
 
 	filters := make(map[string]string)
+	title := ""
 	hackeroneStates := []string{"new", "triaged", "needs-more-info", "resolved"}
 	if contains(hackeroneStates, state) {
 		filters["state"] = state
+		title = "Displaying reports with the state: `" + state + "`"
 	} else if state == "bounty" {
 		filters["state"] = "triaged"
 		filters["bounty_awarded_at__null"] = "true"
+		title = "Displaying reports that is `triaged` & is awaiting for a `bounty to be rewarded`:"
 	} else if state == "disclosure" {
 		filters["reporter_agreed_on_going_public"] = "true"
+		title = "Displaying reports that the researchers have requested for `public disclosure`:"
 	} else if state == "disclosed" {
 		filters["disclosed_at__null"] = "false"
+		title = "Displaying reports that have been `disclosed`:"
+	} else {
+		title = "Displaying all reports:"
 	}
 
 	reports, err := p.fetchReports(filters)
@@ -110,7 +176,7 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 		msg := fmt.Sprintf("Something went wrong while getting the reports from Hackerone API. Error: %s\n", err.Error())
 		return p.sendEphemeralResponse(args, msg), nil
 	} else {
-		reportString := ""
+		reportString := "#### " + title + "\n\n"
 		if len(reports) > 0 {
 			for _, report := range reports {
 				reportString += getReportString(report, false)
@@ -119,7 +185,7 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 			_ = p.sendPost(args, reportString, nil)
 		} else {
 			msg := "No reports found matching the filter criteria you have specified."
-			return p.sendEphemeralResponse(args, msg), nil
+			return p.sendEphemeralResponse(args, reportString+msg), nil
 		}
 	}
 
@@ -129,7 +195,7 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 func getReportString(report Report, description bool) string {
 	reportLink := fmt.Sprintf("[%s](https://hackerone.com/reports/%s)", report.Attributes.Title, report.Id)
 	actorLink := "[" + report.Relationships.Reporter.Data.Attributes.Name + "](https://hackerone.com/" + report.Relationships.Reporter.Data.Attributes.Username + ")"
-	reportString := fmt.Sprintf("### %s\n\n", reportLink)
+	reportString := fmt.Sprintf("##### %s\n\n", reportLink)
 	reportString += "| ID | Reporter | State | Created At | Triaged At | Bounty Awarded At | Closed At | Disclosed At |\n| :----- | :----- | :----- | :----- | :----- | :----- | :----- | :----- |\n"
 	reportString += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s | %s |\n", report.Id, actorLink, report.Attributes.State, report.Attributes.CreatedAt, report.Attributes.TriagedAt, report.Attributes.BountyAwardedAt, report.Attributes.ClosedAt, report.Attributes.DisclosedAt)
 	if description && len(report.Attributes.Info) > 0 {

@@ -16,9 +16,6 @@
             "windows-amd64": "server/dist/plugin-windows-amd64.exe"
         }
     },
-    "webapp": {
-        "bundle_path": "webapp/dist/main.js"
-    },
     "settings_schema": {
         "header": "The Hackerone plugin for Mattermost allows users to subscribe to Hackerone notifications, stay up-to-date with all the reports submitted on the Hackerone platform, and other common Hackerone actions - directly from Mattermost. \n \n Instructions for setup are [available here](https://github.com/srkgupta/mattermost-plugin-hackerone#configuration).",
         "footer": "* To report an issue, make a suggestion or a contribution, [check the repository](https://github.com/srkgupta/mattermost-plugin-hackerone).",

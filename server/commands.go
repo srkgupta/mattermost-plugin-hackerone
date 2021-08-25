@@ -10,17 +10,14 @@ import (
 )
 
 const (
-	hackeroneCommand  = "/hackerone"
-	helpCmdKey        = "help"
-	statsCmdKey       = "stats"
-	activityCmdKey    = "activities"
-	pendingCmdKey     = "pending_reports"
-	reportCmdKey      = "report"
-	reportsCmdKey     = "reports"
-	deadlineCmdKey    = "deadline_reports"
-	subscribeCmdKey   = "subscribe"
-	unsubscribeCmdKey = "unsubscribe"
-	cmdError          = "Command Error"
+	hackeroneCommand = "/hackerone"
+	helpCmdKey       = "help"
+	statsCmdKey      = "stats"
+	activityCmdKey   = "activities"
+	reportCmdKey     = "report"
+	reportsCmdKey    = "reports"
+	subscribeCmdKey  = "subscriptions"
+	cmdError         = "Command Error"
 )
 
 // type CommandHandlerFunc func(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse
@@ -28,12 +25,9 @@ const (
 const helpText = "###### Mattermost Hackerone Plugin\n" +
 	// "* `/hackerone stats` - Gets stats info like # of new, # of pending bounty, # of pending disclosure, # of triaged reports\n" +
 	"* `/hackerone activities <count>` - Gets most recent activities of your program\n" +
-	"* `/hackerone reports <status>` - Gets list of reports from Hackerone based on the status filter.\n" +
+	"* `/hackerone reports <filter>` - Gets list of reports from Hackerone based on the filter supplied.\n" +
 	"* `/hackerone report <report_id>` - Gets information about the requested report id\n" +
-	"* `/hackerone pending_reports <new/triaged/disclosure>` - Gets a list of pending reports according to the criteria specified - new, triaged, disclosure\n" +
-	"* `/hackerone deadline_reports <new/triaged>` - Gets a list of reports which have exceeded the time deadline. Example: it will list all the reports which have been triaged for more than 1 month\n" +
-	"* `/hackerone subscribe` - Subscribe the current channel to receive Hackerone notifications. Once a channel is subscribed, the service will poll Hackerone every 30 seconds and check for new content. If any new content is found, it will be shown on the channel\n" +
-	"* `/hackerone unsubscribe` - Once unsubscribed, the channel will stop receiving any notifications for any events from Hackerone\n" +
+	"* `/hackerone subscriptions <command>` - Available subcommands: list, add, delete. Subscribe the current channel to receive Hackerone notifications. Once a channel is subscribed, the service will poll Hackerone every 30 seconds and check for new activity. If any new activity is found, it will be shown on the channel\n" +
 	""
 
 func (p *Plugin) getCommand(config *configuration) (*model.Command, error) {
@@ -45,7 +39,7 @@ func (p *Plugin) getCommand(config *configuration) (*model.Command, error) {
 	return &model.Command{
 		Trigger:              "hackerone",
 		AutoComplete:         true,
-		AutoCompleteDesc:     "Available commands: stats, activities, reports, report, pending_reports, deadline_reports, help, subscribe, triggers, unsubscribe",
+		AutoCompleteDesc:     "Available commands: stats, activities, reports, report, help, subscriptions",
 		AutoCompleteHint:     "[command]",
 		AutocompleteData:     getAutocompleteData(config),
 		AutocompleteIconData: iconData,
@@ -73,6 +67,8 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return p.executeReport(args, split[2:])
 	case reportsCmdKey:
 		return p.executeReports(args, split[2:])
+	case subscribeCmdKey:
+		return p.executeSubscriptions(args, split[2:])
 	default:
 		return p.sendEphemeralResponse(args, helpText), nil
 	}
@@ -103,7 +99,7 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 	reports.AddCommand(moreInfoReports)
 	bountyReports := model.NewAutocompleteData("bounty", "", "Fetches reports that is triaged & is awaiting for a bounty to be rewarded."+note)
 	reports.AddCommand(bountyReports)
-	disclosureReports := model.NewAutocompleteData("disclosure", "", "Fetches reports that have the hacker disclosure request"+note)
+	disclosureReports := model.NewAutocompleteData("disclosure", "", "Fetches reports that the researchers have requested for public disclosure"+note)
 	reports.AddCommand(disclosureReports)
 	disclosedReports := model.NewAutocompleteData("disclosed", "", "Fetches reports that have been disclosed."+note)
 	reports.AddCommand(disclosedReports)
@@ -115,11 +111,18 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 	report := model.NewAutocompleteData(reportCmdKey, "[report-id]", "Gets detailed info about a Hackerone report."+note)
 	hackerone.AddCommand(report)
 
-	subscribe := model.NewAutocompleteData(subscribeCmdKey, "", "Subscribe the current channel to receive Hackerone notifications.")
-	hackerone.AddCommand(subscribe)
+	subscriptions := model.NewAutocompleteData(subscribeCmdKey, "[command]", "Available commands: list, add, delete")
 
-	unsubscribe := model.NewAutocompleteData(unsubscribeCmdKey, "", "Once unsubscribed, the channel will stop receiving any notifications for any events from Hackerone.")
-	hackerone.AddCommand(unsubscribe)
+	subscribeAdd := model.NewAutocompleteData("add", "", "The current channel will receive notifications when there are any activity on your Hackerone program.")
+	subscriptions.AddCommand(subscribeAdd)
+
+	subscribeDelete := model.NewAutocompleteData("delete", "", "The current channel will stop receiving any notifications for any events from Hackerone.")
+	subscriptions.AddCommand(subscribeDelete)
+
+	subscribeList := model.NewAutocompleteData("check", "", "Check if the current channel will receive Hackerone notifications or not")
+	subscriptions.AddCommand(subscribeList)
+
+	hackerone.AddCommand(subscriptions)
 
 	return hackerone
 }
