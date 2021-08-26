@@ -71,7 +71,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 }
 
 func getAutocompleteData(config *configuration) *model.AutocompleteData {
-	hackerone := model.NewAutocompleteData("hackerone", "[command]", "Available commands: stats, pending, deadline, help, subscribe, triggers, unsubscribe")
+	hackerone := model.NewAutocompleteData("hackerone", "[command]", "Available commands: help, reports, report, subscription")
 	note := " NOTE: Response will be visible to all in this channel."
 
 	help := model.NewAutocompleteData(helpCmdKey, "", "Display Slash Command help text")

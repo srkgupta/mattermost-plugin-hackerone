@@ -17,8 +17,10 @@ func (p *Plugin) executeReport(args *model.CommandArgs, split []string) (*model.
 			msg := fmt.Sprintf("Something went wrong while getting the report from Hackerone API. Error: %s\n", err.Error())
 			return p.sendEphemeralResponse(args, msg), nil
 		} else {
-			reportString := p.getReportString(report, true)
-			_ = p.sendPost(args, reportString, nil)
+			postAttachments := []*model.SlackAttachment{}
+			attachment := p.getReportAttachment(report, true)
+			postAttachments = append(postAttachments, attachment)
+			_ = p.sendPost(args, "", postAttachments)
 		}
 	}
 	return &model.CommandResponse{}, nil
@@ -65,11 +67,12 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	} else {
 		reportString := "#### " + title + "\n\n"
 		if len(reports) > 0 {
+			postAttachments := []*model.SlackAttachment{}
 			for _, report := range reports {
-				reportString += p.getReportString(report, false)
-				reportString += "\n\n"
+				attachment := p.getReportAttachment(report, false)
+				postAttachments = append(postAttachments, attachment)
 			}
-			_ = p.sendPost(args, reportString, nil)
+			_ = p.sendPost(args, reportString, postAttachments)
 		} else {
 			msg := "No reports found matching the filter criteria you have specified."
 			return p.sendEphemeralResponse(args, reportString+msg), nil
@@ -79,19 +82,52 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	return &model.CommandResponse{}, nil
 }
 
-func (p *Plugin) getReportString(report Report, description bool) string {
-	reportLink := fmt.Sprintf("[%s](https://hackerone.com/reports/%s)", report.Attributes.Title, report.Id)
-	actorLink := "[" + report.Relationships.Reporter.Data.Attributes.Name + "](https://hackerone.com/" + report.Relationships.Reporter.Data.Attributes.Username + ")"
-	reportString := fmt.Sprintf("##### %s\n\n", reportLink)
-	reportString += "| ID | Reporter | State | Created At | Triaged At | Bounty Awarded At | Closed At | Disclosed At |\n| :----- | :----- | :----- | :----- | :----- | :----- | :----- | :----- |\n"
-	reportString += fmt.Sprintf("| %s | %s | %s | %s | %s | %s | %s | %s |\n", report.Id, actorLink, report.Attributes.State, report.Attributes.CreatedAt, report.Attributes.TriagedAt, report.Attributes.BountyAwardedAt, report.Attributes.ClosedAt, report.Attributes.DisclosedAt)
-	if description && len(report.Attributes.Info) > 0 {
-		reportString += fmt.Sprintf("#### Report Description:\n %s\n\n", report.Attributes.Info)
-	}
-	return reportString
-}
-
 func (p *Plugin) getReportAttachment(report Report, description bool) *model.SlackAttachment {
+	fields := []*model.SlackAttachmentField{
+		{
+			Title: "Report Id",
+			Value: report.Id,
+			Short: true,
+		},
+		{
+			Title: "State",
+			Value: report.Attributes.State,
+			Short: true,
+		},
+		{
+			Title: "Created At",
+			Value: p.parseTime(report.Attributes.CreatedAt),
+			Short: true,
+		},
+		{
+			Title: "Triaged At",
+			Value: p.parseTime(report.Attributes.TriagedAt),
+			Short: true,
+		},
+		{
+			Title: "Bounty Awarded At",
+			Value: p.parseTime(report.Attributes.BountyAwardedAt),
+			Short: true,
+		},
+		{
+			Title: "Closed At",
+			Value: p.parseTime(report.Attributes.ClosedAt),
+			Short: true,
+		},
+		{
+			Title: "Disclosed At",
+			Value: p.parseTime(report.Attributes.DisclosedAt),
+			Short: true,
+		},
+	}
+	if description {
+		fields = append(fields, &model.SlackAttachmentField{
+			Title: "Report Details",
+			Value: report.Attributes.Info,
+			Short: false,
+		},
+		)
+	}
 	return &model.SlackAttachment{
 		Title:      report.Attributes.Title,
 		TitleLink:  "https://hackerone.com/reports/" + report.Id,
@@ -99,42 +135,6 @@ func (p *Plugin) getReportAttachment(report Report, description bool) *model.Sla
 		AuthorLink: "https://hackerone.com/" + report.Relationships.Reporter.Data.Attributes.Username,
 		AuthorIcon: report.Relationships.Reporter.Data.Attributes.ProfilePicture.Photo,
 		Timestamp:  report.Attributes.CreatedAt,
-		Fields: []*model.SlackAttachmentField{
-			{
-				Title: "Report Id",
-				Value: report.Id,
-				Short: true,
-			},
-			{
-				Title: "State",
-				Value: report.Attributes.State,
-				Short: true,
-			},
-			{
-				Title: "Created At",
-				Value: p.parseTime(report.Attributes.CreatedAt),
-				Short: true,
-			},
-			{
-				Title: "Triaged At",
-				Value: p.parseTime(report.Attributes.TriagedAt),
-				Short: true,
-			},
-			{
-				Title: "Bounty Awarded At",
-				Value: p.parseTime(report.Attributes.BountyAwardedAt),
-				Short: true,
-			},
-			{
-				Title: "Closed At",
-				Value: p.parseTime(report.Attributes.ClosedAt),
-				Short: true,
-			},
-			{
-				Title: "Disclosed At",
-				Value: p.parseTime(report.Attributes.DisclosedAt),
-				Short: true,
-			},
-		},
+		Fields:     fields,
 	}
 }
