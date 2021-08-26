@@ -13,7 +13,6 @@ const (
 	hackeroneCommand = "/hackerone"
 	helpCmdKey       = "help"
 	statsCmdKey      = "stats"
-	activityCmdKey   = "activities"
 	reportCmdKey     = "report"
 	reportsCmdKey    = "reports"
 	subscribeCmdKey  = "subscriptions"
@@ -24,7 +23,6 @@ const (
 
 const helpText = "###### Mattermost Hackerone Plugin\n" +
 	// "* `/hackerone stats` - Gets stats info like # of new, # of pending bounty, # of pending disclosure, # of triaged reports\n" +
-	"* `/hackerone activities <count>` - Gets most recent activities of your program\n" +
 	"* `/hackerone reports <filter>` - Gets list of reports from Hackerone based on the filter supplied.\n" +
 	"* `/hackerone report <report_id>` - Gets information about the requested report id\n" +
 	"* `/hackerone subscriptions <command>` - Available subcommands: list, add, delete. Subscribe the current channel to receive Hackerone notifications. Once a channel is subscribed, the service will poll Hackerone every 30 seconds and check for new activity. If any new activity is found, it will be shown on the channel\n" +
@@ -39,7 +37,7 @@ func (p *Plugin) getCommand(config *configuration) (*model.Command, error) {
 	return &model.Command{
 		Trigger:              "hackerone",
 		AutoComplete:         true,
-		AutoCompleteDesc:     "Available commands: stats, activities, reports, report, help, subscriptions",
+		AutoCompleteDesc:     "Available commands: reports, report, help, subscriptions",
 		AutoCompleteHint:     "[command]",
 		AutocompleteData:     getAutocompleteData(config),
 		AutocompleteIconData: iconData,
@@ -59,8 +57,6 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	switch command {
-	case activityCmdKey:
-		return p.executeActivities(args, split[2:])
 	case statsCmdKey:
 		return p.executeStats(args, split[2:])
 	case reportCmdKey:
@@ -80,9 +76,6 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 
 	help := model.NewAutocompleteData(helpCmdKey, "", "Display Slash Command help text")
 	hackerone.AddCommand(help)
-
-	activities := model.NewAutocompleteData(activityCmdKey, "[positive integer]", "Gets most recent activities of your program."+note)
-	hackerone.AddCommand(activities)
 
 	// stats := model.NewAutocompleteData(statsCmdKey, "", "Gets stats info like # of new, # of pending bounty, # of pending disclosure, # of triaged reports. NOTE: Response will be visible to all users in this channel.")
 	// hackerone.AddCommand(stats)

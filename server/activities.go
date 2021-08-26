@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -42,41 +40,13 @@ func (p *Plugin) StoreActivityLastKey(value string) error {
 	return nil
 }
 
-func (p *Plugin) executeActivities(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
-	count := "10"
-	if 0 < len(split) {
-		s := split[0]
-		i, err := strconv.Atoi(s)
-		if err != nil || i > 100 || i < 1 {
-			count = "10"
-		} else {
-			count = s
-		}
-	}
-	activitiesListString := ""
-	activities, err := p.fetchActivities(count, "")
-	if err != nil {
-		msg := fmt.Sprintf("Something went wrong while getting the activities from Hackerone API. Error: %s\n", err.Error())
-		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		for _, activity := range activities.Activities {
-			activitiesListString += p.activityTemplate(activity)
-		}
-		_ = p.sendPost(args, activitiesListString, nil)
-	}
-	return &model.CommandResponse{}, nil
-}
-
 func (p *Plugin) activityTemplate(activity Activity) string {
 	activitiesListString := ""
-	reportLink := "[report " + activity.Attributes.ReportID + "](https://hackerone.com/reports/" + activity.Attributes.ReportID + ")"
 	actorLink := "[" + activity.Relationships.Actor.Data.Attributes.Name + "](https://hackerone.com/" + activity.Relationships.Actor.Data.Attributes.Username + ")"
-	activityLink := strings.Replace(getActivityType(activity.ActivityType), "report", reportLink, -1)
 	activitiesListString += fmt.Sprintf(
-		"> %s %s at %s\n",
+		"%s %s\n",
 		actorLink,
-		activityLink,
-		p.parseTime(activity.Attributes.CreatedAt),
+		getActivityType(activity.ActivityType),
 	)
 	if len(activity.Attributes.Message) > 1 {
 		activitiesListString += "\n```\n" + activity.Attributes.Message + "\n```\n"
@@ -85,26 +55,134 @@ func (p *Plugin) activityTemplate(activity Activity) string {
 }
 
 func (p *Plugin) notifyNewActivity() error {
-	last_updated_at, err := p.GetActivityLastKey()
-	if err != nil {
-		return errors.Wrap(err, "error while notifying new activity")
-	}
-	activities, err := p.fetchActivities("100", last_updated_at)
-	activitiesListString := ""
-	if err != nil {
-		return errors.Wrap(err, "Something went wrong while getting the activities from Hackerone API.")
-	} else {
-		for _, activity := range activities.Activities {
-			activitiesListString += p.activityTemplate(activity)
+	subs, _ := p.GetSubscriptions()
+	if len(subs) > 0 {
+		last_updated_at, err := p.GetActivityLastKey()
+		if err != nil {
+			p.API.LogWarn("Error while notifying new activity", "error", err.Error())
+			return errors.Wrap(err, "error while notifying new activity")
+		}
+		activities, err := p.fetchActivities("100", string(last_updated_at))
+		if err != nil {
+			p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
+			return errors.Wrap(err, "Something went wrong while getting the activities from Hackerone API.")
+		} else {
+			if len(activities.Activities) > 0 {
+				for _, activity := range activities.Activities {
+					activitiesListString := p.activityTemplate(activity)
+					postAttachments := []*model.SlackAttachment{}
+					report, err := p.fetchReport(activity.Attributes.ReportID)
+					if err != nil {
+						p.API.LogWarn("Something went wrong while getting the report from Hackerone API", "error", err.Error())
+					} else {
+						attachment := p.getReportAttachment(report, false)
+						postAttachments = append(postAttachments, attachment)
+					}
+					for _, v := range subs {
+						p.sendPostByChannelId(v.ChannelID, activitiesListString, postAttachments)
+					}
+				}
+
+				if len(activities.Meta.MaxUpdatedAt) > 1 {
+					p.StoreActivityLastKey(activities.Meta.MaxUpdatedAt)
+				}
+			}
 		}
 
-		subs, _ := p.GetSubscriptions()
-		for _, v := range subs {
-			p.sendPostByChannelId(v.ChannelID, activitiesListString, nil)
-		}
-		if len(activities.Meta.MaxUpdatedAt) > 1 {
-			p.StoreActivityLastKey(activities.Meta.MaxUpdatedAt)
-		}
 	}
 	return nil
+}
+
+func getActivityType(activityType string) string {
+	switch activityType {
+	case "activity-agreed-on-going-public":
+		return "agreed on going public on the report"
+	case "activity-bounty-awarded":
+		return "awarded a bounty on the report"
+	case "activity-bounty-suggested":
+		return "suggested a bounty on the report"
+	case "activity-bug-cloned":
+		return "cloned the report"
+	case "activity-comment":
+		return "commented on the report"
+	case "activity-bug-duplicate":
+		return "closed the report as Duplicate"
+	case "activity-bug-triaged":
+		return "triaged the report"
+	case "activity-bug-inactive":
+		return "marked the report as Inactive"
+	case "activity-bug-new":
+		return "marked the report as New"
+	case "activity-bug-retesting":
+		return "marked the report for Retesting"
+	case "activity-bug-spam":
+		return "marked the report as Spam"
+	case "activity-bug-resolved":
+		return "resolved the report"
+	case "activity-bug-filed":
+		return "filed a new report"
+	case "activity-bug-informative":
+		return "closed the report as Informative"
+	case "activity-bug-needs-more-info":
+		return "requested more info"
+	case "activity-bug-not-applicable":
+		return "closed the report as Not Applicable"
+	case "activity-bug-reopened":
+		return "reopened the report"
+	case "activity-cancelled-disclosure-request":
+		return "cancelled the disclosure request"
+	case "activity-user-assigned-to-bug":
+		return "assigned a user to the report"
+	case "activity-changed-scope":
+		return "changed the scope on the report"
+	case "activity-comments-closed":
+		return "locked the report"
+	case "activity-external-user-invited":
+		return "invited an external user on the report"
+	case "activity-external-user-joined":
+		return "joined the report as an external user"
+	case "activity-external-user-removed":
+		return "removed an external user from the report"
+	case "activity-group-assigned-to-bug":
+		return "assigned the report to a group"
+	case "activity-hacker-requested-mediation":
+		return "requested for mediation"
+	case "activity-manually-disclosed":
+		return "manually disclosed"
+	case "activity-mediation-requested":
+		return "requested for mediation"
+	case "activity-nobody-assigned-to-bug":
+		return "removed the asignee on the report"
+	case "activity-not-eligible-for-bounty":
+		return "marked the report as not eligible for bounty"
+	case "activity-program-inactive":
+		return "marked the status as program inactive on the report"
+	case "activity-reference-id-added":
+		return "added a reference id on the report"
+	case "activity-report-became-public":
+		return "disclosed the report as public"
+	case "activity-report-custom-field-value-updated":
+		return "updated the custom field on the report"
+	case "activity-report-retest-approved":
+		return "approved the retesting on the report"
+	case "activity-report-retest-rejected":
+		return "rejected the retesting on the report"
+	case "activity-report-severity-updated":
+		return "updated the severity on the report"
+	case "activity-report-title-updated":
+		return "updated the title on the report"
+	case "activity-report-vulnerability-types-updated":
+		return "updated the vulnerability type of the report"
+	case "activity-retest-user-expired":
+		return "retesting request was timed out on the report"
+	case "activity-swag-awarded":
+		return "awarded a swag on the report"
+	case "activity-user-banned-from-program":
+		return "banned a user from the program on the report"
+	case "activity-user-completed-retest":
+		return "completed retesting on the report"
+	case "activity-user-left-retest":
+		return "left the retesting on the report"
+	}
+	return activityType
 }

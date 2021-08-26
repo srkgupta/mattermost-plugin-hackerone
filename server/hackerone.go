@@ -18,17 +18,17 @@ func (p *Plugin) doHTTPRequest(method string, url string, body io.Reader) (*http
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(p.getConfiguration().HackeroneApiIdentifier, p.getConfiguration().HackeroneApiKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "bad request")
+		return nil, errors.Wrap(err, "bad request for url:"+url)
 	}
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "connection problem")
+		return nil, errors.Wrap(err, "connection problem for url:"+url)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		_ = resp.Body.Close()
-		return nil, errors.New("non-ok status code")
+		return nil, errors.New("non-ok status code for url:" + url)
 	}
 	return resp, err
 }
@@ -52,8 +52,11 @@ type Activity struct {
 		Actor struct {
 			Data struct {
 				Attributes struct {
-					Name     string
-					Username string
+					Name           string
+					Username       string
+					ProfilePicture struct {
+						Photo string `json:"260x260"`
+					}
 				}
 			}
 		}
@@ -85,10 +88,6 @@ func (p *Plugin) fetchActivities(count string, last_updated_at string) (Activiti
 		p.API.LogWarn(errorMsg, "error", err.Error())
 		return Activities{}, errors.Wrap(err, errorMsg)
 	}
-	if len(response.Activities) < 1 {
-		p.API.LogWarn(errorMsg, "error", err.Error())
-		return Activities{}, errors.Wrap(err, errorMsg)
-	}
 	return response, errors.Wrap(err, errorMsg)
 }
 
@@ -117,8 +116,11 @@ type Report struct {
 		Reporter struct {
 			Data struct {
 				Attributes struct {
-					Name     string
-					Username string
+					Name           string
+					Username       string
+					ProfilePicture struct {
+						Photo string `json:"260x260"`
+					}
 				}
 			}
 		}

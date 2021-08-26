@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
 
@@ -133,4 +135,62 @@ func (p *Plugin) Unsubscribe(channelID string) error {
 	}
 
 	return nil
+}
+func (p *Plugin) executeSubscriptions(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
+	if 0 >= len(split) {
+		msg := "Invalid subscribe command. Available commands are 'list', 'add' and 'delete'."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+
+	command := split[0]
+
+	switch {
+	case command == "check":
+		return p.handleSubscriptionsList(args)
+	case command == "add":
+		return p.handleSubscribesAdd(args)
+	case command == "delete":
+		return p.handleUnsubscribe(args)
+	default:
+		msg := "Unknown subcommand for subscribe command. Available commands are 'list', 'add' and 'delete'."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
+func (p *Plugin) handleSubscribesAdd(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	err := p.Subscribe(args.UserId, args.ChannelId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while subscribing. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	} else {
+		msg := "Subscription successful! The channel will now receive notifications whenever there are any activity on your Hackerone program."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
+func (p *Plugin) handleUnsubscribe(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	err := p.Unsubscribe(args.ChannelId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while unsubscribing. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	} else {
+		msg := "Successfully unsubscribed! The channel will not receive notifications whenever there are any activity on your Hackerone program."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+}
+
+func (p *Plugin) handleSubscriptionsList(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while checking for subscriptions. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	} else {
+		msg := ""
+		if len(subs) > 0 {
+			msg = "The channel is subscribed to receive Hackerone notifications."
+		} else {
+			msg = "The channel is not subscribed to receive any Hackerone notifications."
+		}
+		return p.sendEphemeralResponse(args, msg), nil
+	}
 }
