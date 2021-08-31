@@ -42,7 +42,11 @@ func (p *Plugin) StoreActivityLastKey(value string) error {
 
 func (p *Plugin) activityTemplate(activity Activity) string {
 	activitiesListString := ""
-	actorLink := "[" + activity.Relationships.Actor.Data.Attributes.Name + "](https://hackerone.com/" + activity.Relationships.Actor.Data.Attributes.Username + ")"
+	name := activity.Relationships.Actor.Data.Attributes.Name
+	if len(name) < 1 {
+		name = activity.Relationships.Actor.Data.Attributes.Username
+	}
+	actorLink := "[" + name + "](https://hackerone.com/" + activity.Relationships.Actor.Data.Attributes.Username + ")"
 	activitiesListString += fmt.Sprintf(
 		"%s %s\n",
 		actorLink,
@@ -75,7 +79,12 @@ func (p *Plugin) notifyNewActivity() error {
 					if err != nil {
 						p.API.LogWarn("Something went wrong while getting the report from Hackerone API", "error", err.Error())
 					} else {
-						attachment := p.getReportAttachment(report, false)
+						var attachment = &model.SlackAttachment{}
+						if activity.ActivityType == "activity-bug-filed" {
+							attachment = p.getReportAttachment(report, true)
+						} else {
+							attachment = p.getReportAttachment(report, false)
+						}
 						postAttachments = append(postAttachments, attachment)
 					}
 					for _, v := range subs {

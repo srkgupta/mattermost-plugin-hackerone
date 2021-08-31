@@ -14,6 +14,7 @@ const (
 )
 
 func (p *Plugin) doHTTPRequest(method string, url string, body io.Reader) (*http.Response, error) {
+	p.API.LogDebug("Making HTTP request to Hackerone API:" + hackeroneApiUrl + url)
 	req, err := http.NewRequest(method, hackeroneApiUrl+url, body)
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(p.getConfiguration().HackeroneApiIdentifier, p.getConfiguration().HackeroneApiKey)

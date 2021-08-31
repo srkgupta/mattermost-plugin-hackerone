@@ -6,14 +6,11 @@ package main
 import (
 	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 const (
 	HackeroneNewActivity    = "new-activity"
 	HackeroneMissedDeadline = "missed-deadline"
-	MissedDeadlineInterval  = 3600
 )
 
 type TaskFunc func()
@@ -31,7 +28,8 @@ func (p *Plugin) createHackeroneRecurring() {
 	interval := time.Duration(p.getConfiguration().HackeronePollIntervalSeconds)
 	newActivityTask := createTask(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval, true)
 	p.scheduledTasks = append(p.scheduledTasks, newActivityTask)
-	missedDeadlineTask := createTask(HackeroneMissedDeadline, func() { p.notifyMissedDeadline() }, MissedDeadlineInterval, true)
+	slaInterval := time.Duration(p.getConfiguration().HackeroneSLAPollIntervalSeconds)
+	missedDeadlineTask := createTask(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval, true)
 	p.scheduledTasks = append(p.scheduledTasks, missedDeadlineTask)
 }
 
@@ -40,19 +38,6 @@ func (p *Plugin) cancelHackeroneRecurring() {
 		t.Cancel()
 	}
 	p.scheduledTasks = []*ScheduledTask{}
-}
-
-func (p *Plugin) notifyMissedDeadline() error {
-	subs, err := p.GetSubscriptions()
-	if err != nil {
-		return errors.Wrap(err, "could not get subscriptions")
-	}
-	for _, v := range subs {
-		tm := time.Now()
-		msg := fmt.Sprintf("Missed Deadline: %s", tm)
-		p.sendPostByChannelId(v.ChannelID, msg, nil)
-	}
-	return nil
 }
 
 func createTask(name string, function TaskFunc, interval time.Duration, recurring bool) *ScheduledTask {

@@ -18,13 +18,14 @@ import (
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
 type configuration struct {
-	HackeroneProgramHandle       string
-	HackeroneApiIdentifier       string
-	HackeroneApiKey              string
-	HackeronePollIntervalSeconds int
-	HackeroneSLANew              int
-	HackeroneSLABounty           int
-	HackeroneSLATriaged          int
+	HackeroneProgramHandle          string
+	HackeroneApiIdentifier          string
+	HackeroneApiKey                 string
+	HackeronePollIntervalSeconds    int
+	HackeroneSLAPollIntervalSeconds int
+	HackeroneSLANew                 int
+	HackeroneSLABounty              int
+	HackeroneSLATriaged             int
 }
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
@@ -49,6 +50,10 @@ func (c *configuration) IsValid() error {
 		return errors.New("poll interval should be minimum of 10 seconds")
 	} else if c.HackeronePollIntervalSeconds > 3600 {
 		return errors.New("poll interval should be a maximum of 3600 seconds")
+	}
+
+	if c.HackeroneSLAPollIntervalSeconds < 3600 {
+		return errors.New("SLA poll interval should be minimum of 3600 seconds")
 	}
 
 	if c.HackeroneSLANew < 1 {
