@@ -112,7 +112,7 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 	subscribeDelete := model.NewAutocompleteData("delete", "", "The current channel will stop receiving any notifications for any events from Hackerone.")
 	subscriptions.AddCommand(subscribeDelete)
 
-	subscribeList := model.NewAutocompleteData("check", "", "Check if the current channel will receive Hackerone notifications or not")
+	subscribeList := model.NewAutocompleteData("list", "", "Lists all the channels which has been set to receive Hackerone notifications")
 	subscriptions.AddCommand(subscribeList)
 
 	hackerone.AddCommand(subscriptions)

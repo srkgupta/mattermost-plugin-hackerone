@@ -145,7 +145,7 @@ func (p *Plugin) executeSubscriptions(args *model.CommandArgs, split []string) (
 	command := split[0]
 
 	switch {
-	case command == "check":
+	case command == "list":
 		return p.handleSubscriptionsList(args)
 	case command == "add":
 		return p.handleSubscribesAdd(args)
@@ -180,16 +180,20 @@ func (p *Plugin) handleUnsubscribe(args *model.CommandArgs) (*model.CommandRespo
 }
 
 func (p *Plugin) handleSubscriptionsList(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	subs, err := p.GetSubscriptionsByChannel(args.ChannelId)
+	subs, err := p.GetSubscriptions()
+	msg := ""
 	if err != nil {
-		msg := fmt.Sprintf("Something went wrong while checking for subscriptions. Error: %s\n", err.Error())
+		msg = fmt.Sprintf("Something went wrong while checking for subscriptions. Error: %s\n", err.Error())
 		return p.sendEphemeralResponse(args, msg), nil
 	} else {
-		msg := ""
-		if len(subs) > 0 {
-			msg = "The channel is subscribed to receive Hackerone notifications."
+		if len(subs) == 0 {
+			msg = "Currently there are no channels subscribed to receive Hackerone notifications."
 		} else {
-			msg = "The channel is not subscribed to receive any Hackerone notifications."
+			msg = "Channels subscribed to receive Hackerone notifications:\n"
+			for i, v := range subs {
+				channel, _ := p.API.GetChannel(v.ChannelID)
+				msg += fmt.Sprintf("%d. ~%s\n", i+1, channel.Name)
+			}
 		}
 		return p.sendEphemeralResponse(args, msg), nil
 	}
