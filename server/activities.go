@@ -88,7 +88,9 @@ func (p *Plugin) notifyNewActivity() error {
 						postAttachments = append(postAttachments, attachment)
 					}
 					for _, v := range subs {
-						p.sendPostByChannelId(v.ChannelID, activitiesListString, postAttachments)
+						if (len(v.ReportID) == 0) || (v.ReportID == activity.Attributes.ReportID) {
+							p.sendPostByChannelId(v.ChannelID, activitiesListString, postAttachments)
+						}
 					}
 				}
 

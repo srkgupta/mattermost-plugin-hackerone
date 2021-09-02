@@ -106,10 +106,10 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 
 	subscriptions := model.NewAutocompleteData(subscribeCmdKey, "[command]", "Available commands: list, add, delete")
 
-	subscribeAdd := model.NewAutocompleteData("add", "", "The current channel will receive notifications when there are any activity on your Hackerone program.")
+	subscribeAdd := model.NewAutocompleteData("add", "<report_id>(optional)", "The current channel will receive notifications when there are any activity on your Hackerone program. If report_id is not specified, it will subscribe to all the Hackerone reports")
 	subscriptions.AddCommand(subscribeAdd)
 
-	subscribeDelete := model.NewAutocompleteData("delete", "", "The current channel will stop receiving any notifications for any events from Hackerone.")
+	subscribeDelete := model.NewAutocompleteData("delete", "[index]", "The specified channel will stop receiving any notifications for any events from Hackerone. You can run the command '/hackerone subscriptions list' to get the index position.")
 	subscriptions.AddCommand(subscribeDelete)
 
 	subscribeList := model.NewAutocompleteData("list", "", "Lists all the channels which has been set to receive Hackerone notifications")

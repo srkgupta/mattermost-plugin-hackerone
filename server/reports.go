@@ -186,16 +186,29 @@ func (p *Plugin) notifyReports(filters map[string]string, title string, descript
 	if err != nil {
 		p.API.LogWarn("Error while fetching Reports from Hackerone", "error", err.Error())
 		return errors.Wrap(err, "error while notifying missed deadline reports")
-	} else {
+	} else if len(reports) > 0 {
 		reportString := "#### " + title + "\n" + description + "\n\n"
-		if len(reports) > 0 {
+		for _, s := range subs {
+			found := false
 			postAttachments := []*model.SlackAttachment{}
 			for _, report := range reports {
-				attachment := p.getReportAttachment(report, false)
-				postAttachments = append(postAttachments, attachment)
+				// If subscription has a report Id
+				if len(s.ReportID) > 0 {
+					// Notify only if subscription's report ID is equal to report fetched from Hackerone
+					if s.ReportID == report.Id {
+						attachment := p.getReportAttachment(report, false)
+						postAttachments = append(postAttachments, attachment)
+						found = true
+						break
+					}
+				} else {
+					attachment := p.getReportAttachment(report, false)
+					postAttachments = append(postAttachments, attachment)
+					found = true
+				}
 			}
-			for _, v := range subs {
-				p.sendPostByChannelId(v.ChannelID, reportString, postAttachments)
+			if found {
+				p.sendPostByChannelId(s.ChannelID, reportString, postAttachments)
 			}
 		}
 	}

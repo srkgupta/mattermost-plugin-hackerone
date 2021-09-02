@@ -52,7 +52,7 @@ func (c *configuration) IsValid() error {
 		return errors.New("poll interval should be a maximum of 3600 seconds")
 	}
 
-	if c.HackeroneSLAPollIntervalSeconds < 3600 {
+	if c.HackeroneSLAPollIntervalSeconds < 10 {
 		return errors.New("SLA poll interval should be minimum of 3600 seconds")
 	}
 
