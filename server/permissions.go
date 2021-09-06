@@ -110,9 +110,13 @@ func (p *Plugin) IsAdmin(userID string) (bool, error) {
 	return false, nil
 }
 func (p *Plugin) IsAuthorized(userID string) (bool, error) {
-	_, appErr := p.IsAdmin(userID)
+	isAdmin, appErr := p.IsAdmin(userID)
 	if appErr != nil {
 		return false, appErr
+	}
+
+	if isAdmin {
+		return true, nil
 	}
 
 	perms, err := p.GetPermissions()

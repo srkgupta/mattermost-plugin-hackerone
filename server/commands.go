@@ -71,8 +71,6 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	switch command {
-	// case statsCmdKey:
-	// 	return p.executeStats(args, split[2:])
 	case reportCmdKey:
 		return p.executeReport(args, split[2:])
 	case reportsCmdKey:
@@ -93,13 +91,8 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 	help := model.NewAutocompleteData(helpCmdKey, "", "Display Slash Command help text")
 	hackerone.AddCommand(help)
 
-	// stats := model.NewAutocompleteData(statsCmdKey, "", "Gets stats info like # of new, # of pending bounty, # of pending disclosure, # of triaged reports. NOTE: Response will be visible to all users in this channel.")
-	// hackerone.AddCommand(stats)
-
 	reports := model.NewAutocompleteData(reportsCmdKey, "[filters]", "Fetches reports from Hackerone as per the filter criteria specified."+note)
 
-	allReports := model.NewAutocompleteData("all", "", "Fetches all reports from Hackerone."+note)
-	reports.AddCommand(allReports)
 	newReports := model.NewAutocompleteData("new", "", "Fetches new reports from Hackerone."+note)
 	reports.AddCommand(newReports)
 	triagedReports := model.NewAutocompleteData("triaged", "", "Fetches triaged reports from Hackerone."+note)

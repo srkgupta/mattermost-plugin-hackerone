@@ -37,7 +37,7 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	state := ""
 	if len(split) > 0 {
 		state = split[0]
-		allowedStates := []string{"all", "new", "triaged", "needs-more-info", "bounty", "disclosure", "disclosed", "resolved"}
+		allowedStates := []string{"new", "triaged", "needs-more-info", "bounty", "disclosure", "disclosed", "resolved"}
 		if !p.contains(allowedStates, state) {
 			msg := "Incorrect filter option applied. Please select a valid option from the autocomplete."
 			return p.sendEphemeralResponse(args, msg), nil
