@@ -149,7 +149,7 @@ func (p *Plugin) executePermissions(args *model.CommandArgs, split []string) (*m
 		return p.handlePermissionsList(args)
 	case command == "add":
 		if len(split) < 2 {
-			msg := "Please specify the user who needs to be whitelisted to run the hackerone command. Run the command, eg: `/hackerone permissions add @user1` to whitelist a specific user. " + permissionNote
+			msg := "Please specify the user who needs to be whitelisted to run the hackerone command. Run the command, eg: `/hackerone permissions add @user1` to whitelist a specific user."
 			return p.sendEphemeralResponse(args, msg), nil
 		} else {
 			return p.handlePermissionsAdd(args, split[1])

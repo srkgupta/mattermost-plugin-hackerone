@@ -27,7 +27,7 @@ const helpText = "###### Mattermost Hackerone Plugin\n" +
 	// "* `/hackerone stats` - Gets stats info like # of new, # of pending bounty, # of pending disclosure, # of triaged reports\n" +
 	"* `/hackerone reports <filter>` - Gets list of reports from Hackerone based on the filter supplied.\n" +
 	"* `/hackerone report <report_id>` - Gets information about the requested report id\n" +
-	"* `/hackerone subscriptions <command>` - Available subcommands: list, add, delete. Subscribe the current channel to receive Hackerone notifications. Once a channel is subscribed, the service will poll Hackerone every 30 seconds and check for new activity. If any new activity is found, it will be shown on the channel\n" +
+	"* `/hackerone subscriptions <command>` - Available subcommands: list, add, delete. Subscribe the current channel to receive Hackerone notifications. Once a channel is subscribed, the service will poll Hackerone for new activity and publish it on the subscribed channel\n" +
 	"* `/hackerone permissions <command>` - Available subcommands: list, add, delete. Access Control users who can run hackerone slash commands.\n" +
 	""
 
