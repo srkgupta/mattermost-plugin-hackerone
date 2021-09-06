@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
@@ -10,13 +11,14 @@ import (
 )
 
 const (
-	hackeroneCommand = "/hackerone"
-	helpCmdKey       = "help"
-	statsCmdKey      = "stats"
-	reportCmdKey     = "report"
-	reportsCmdKey    = "reports"
-	subscribeCmdKey  = "subscriptions"
-	cmdError         = "Command Error"
+	hackeroneCommand  = "/hackerone"
+	helpCmdKey        = "help"
+	statsCmdKey       = "stats"
+	permissionsCmdKey = "permissions"
+	reportCmdKey      = "report"
+	reportsCmdKey     = "reports"
+	subscribeCmdKey   = "subscriptions"
+	cmdError          = "Command Error"
 )
 
 // type CommandHandlerFunc func(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse
@@ -26,6 +28,7 @@ const helpText = "###### Mattermost Hackerone Plugin\n" +
 	"* `/hackerone reports <filter>` - Gets list of reports from Hackerone based on the filter supplied.\n" +
 	"* `/hackerone report <report_id>` - Gets information about the requested report id\n" +
 	"* `/hackerone subscriptions <command>` - Available subcommands: list, add, delete. Subscribe the current channel to receive Hackerone notifications. Once a channel is subscribed, the service will poll Hackerone every 30 seconds and check for new activity. If any new activity is found, it will be shown on the channel\n" +
+	"* `/hackerone permissions <command>` - Available subcommands: list, add, delete. Access Control users who can run hackerone slash commands.\n" +
 	""
 
 func (p *Plugin) getCommand(config *configuration) (*model.Command, error) {
@@ -37,7 +40,7 @@ func (p *Plugin) getCommand(config *configuration) (*model.Command, error) {
 	return &model.Command{
 		Trigger:              "hackerone",
 		AutoComplete:         true,
-		AutoCompleteDesc:     "Available commands: reports, report, help, subscriptions",
+		AutoCompleteDesc:     "Available commands: help, permissions, reports, report, subscriptions",
 		AutoCompleteHint:     "[command]",
 		AutocompleteData:     getAutocompleteData(config),
 		AutocompleteIconData: iconData,
@@ -56,22 +59,35 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return p.sendEphemeralResponse(args, helpText), nil
 	}
 
+	isAllowed, err := p.IsAuthorized(args.UserId)
+	msg := ""
+	if err != nil {
+		msg = fmt.Sprintf("error occurred while authorizing the command: %v", err)
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+	if !isAllowed {
+		msg = "`/hackerone` commands can only be executed by a system administrator or a list of users whitelisted. Please ask your system administrator to run the command, eg: `/hackerone permissions add @user1` to whitelist a specific user."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+
 	switch command {
-	case statsCmdKey:
-		return p.executeStats(args, split[2:])
+	// case statsCmdKey:
+	// 	return p.executeStats(args, split[2:])
 	case reportCmdKey:
 		return p.executeReport(args, split[2:])
 	case reportsCmdKey:
 		return p.executeReports(args, split[2:])
 	case subscribeCmdKey:
 		return p.executeSubscriptions(args, split[2:])
+	case permissionsCmdKey:
+		return p.executePermissions(args, split[2:])
 	default:
 		return p.sendEphemeralResponse(args, helpText), nil
 	}
 }
 
 func getAutocompleteData(config *configuration) *model.AutocompleteData {
-	hackerone := model.NewAutocompleteData("hackerone", "[command]", "Available commands: help, reports, report, subscription")
+	hackerone := model.NewAutocompleteData("hackerone", "[command]", "Available commands: help, reports, report, subscriptions, permissions")
 	note := " NOTE: Response will be visible to all in this channel."
 
 	help := model.NewAutocompleteData(helpCmdKey, "", "Display Slash Command help text")
@@ -116,6 +132,19 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 	subscriptions.AddCommand(subscribeList)
 
 	hackerone.AddCommand(subscriptions)
+
+	permissions := model.NewAutocompleteData(permissionsCmdKey, "[command]", "Available commands: list, allow, remove")
+
+	permissionAdd := model.NewAutocompleteData("add", "@username", "Whitelist the user to run the Hackerone slash commands. "+permissionNote)
+	permissions.AddCommand(permissionAdd)
+
+	permissionsRemove := model.NewAutocompleteData("delete", "@username", "Remove the user from running the Hackerone slash commands. "+permissionNote)
+	permissions.AddCommand(permissionsRemove)
+
+	permissionsList := model.NewAutocompleteData("list", "", "List all the users who are allowed to run the Hackerone slash commands. "+permissionNote)
+	permissions.AddCommand(permissionsList)
+
+	hackerone.AddCommand(permissions)
 
 	return hackerone
 }

@@ -182,13 +182,12 @@ func (p *Plugin) handleSubscribesAdd(args *model.CommandArgs, reportID string) (
 	if err != nil {
 		msg := fmt.Sprintf("Something went wrong while subscribing. Error: %s\n", err.Error())
 		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		msg := "Subscription successful for all Hackerone reports."
-		if len(reportID) > 0 {
-			msg = "Subscription successful for Hackerone report id: " + reportID
-		}
-		return p.sendEphemeralResponse(args, msg), nil
 	}
+	msg := "Subscription successful for all Hackerone reports."
+	if len(reportID) > 0 {
+		msg = "Subscription successful for Hackerone report id: " + reportID
+	}
+	return p.sendEphemeralResponse(args, msg), nil
 }
 
 func (p *Plugin) handleUnsubscribe(args *model.CommandArgs, indexStr string) (*model.CommandResponse, *model.AppError) {
@@ -201,10 +200,9 @@ func (p *Plugin) handleUnsubscribe(args *model.CommandArgs, indexStr string) (*m
 	if err != nil {
 		msg := fmt.Sprintf("Something went wrong while unsubscribing. Error: %s\n", err.Error())
 		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		msg := "Successfully unsubscribed! The specified channel will not receive Hackerone notifications."
-		return p.sendEphemeralResponse(args, msg), nil
 	}
+	msg := "Successfully unsubscribed! The specified channel will not receive Hackerone notifications."
+	return p.sendEphemeralResponse(args, msg), nil
 }
 
 func (p *Plugin) handleSubscriptionsList(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
@@ -213,21 +211,21 @@ func (p *Plugin) handleSubscriptionsList(args *model.CommandArgs) (*model.Comman
 	if err != nil {
 		msg = fmt.Sprintf("Something went wrong while checking for subscriptions. Error: %s\n", err.Error())
 		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		if len(subs) == 0 {
-			msg = "Currently there are no channels subscribed to receive Hackerone notifications."
-		} else {
-			msg = "Channels subscribed to receive Hackerone notifications:\n"
-			for i, v := range subs {
-				channel, _ := p.API.GetChannel(v.ChannelID)
-				if len(v.ReportID) > 0 {
-					msg += fmt.Sprintf("%d. ~%s (Report ID=%s)\n", i+1, channel.Name, v.ReportID)
-				} else {
-					msg += fmt.Sprintf("%d. ~%s (All Reports)\n", i+1, channel.Name)
-				}
-
-			}
-		}
-		return p.sendEphemeralResponse(args, msg), nil
 	}
+	if len(subs) == 0 {
+		msg = "Currently there are no channels subscribed to receive Hackerone notifications."
+	} else {
+		msg = "Channels subscribed to receive Hackerone notifications:\n"
+		for i, v := range subs {
+			channel, _ := p.API.GetChannel(v.ChannelID)
+			if len(v.ReportID) > 0 {
+				msg += fmt.Sprintf("%d. ~%s (Report ID=%s)\n", i+1, channel.Name, v.ReportID)
+			} else {
+				msg += fmt.Sprintf("%d. ~%s (All Reports)\n", i+1, channel.Name)
+			}
+
+		}
+	}
+	return p.sendEphemeralResponse(args, msg), nil
+
 }
