@@ -25,10 +25,10 @@ type ScheduledTask struct {
 }
 
 func (p *Plugin) createHackeroneRecurring() {
-	interval := time.Duration(p.getConfiguration().HackeronePollIntervalSeconds)
+	interval := time.Duration(p.getConfiguration().HackeronePollIntervalSeconds) * time.Second
 	newActivityTask := createTask(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval, true)
 	p.scheduledTasks = append(p.scheduledTasks, newActivityTask)
-	slaInterval := time.Duration(p.getConfiguration().HackeroneSLAPollIntervalSeconds)
+	slaInterval := time.Duration(p.getConfiguration().HackeroneSLAPollIntervalSeconds) * time.Second
 	missedDeadlineTask := createTask(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval, true)
 	p.scheduledTasks = append(p.scheduledTasks, missedDeadlineTask)
 }
@@ -53,7 +53,7 @@ func createTask(name string, function TaskFunc, interval time.Duration, recurrin
 	go func() {
 		defer close(task.cancelled)
 
-		ticker := time.NewTicker(interval * time.Second)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
 		for {
