@@ -58,12 +58,12 @@ func Test_parseTime(t *testing.T) {
 		{
 			name: "check different format",
 			str:  "2021-09-02T14:29:04Z07:00",
-			want: "Mon Jan 01 0001 12:00 AM",
+			want: "2021-09-02T14:29:04Z07:00",
 		},
 		{
 			name: "check invalid format",
 			str:  "2021-09-02",
-			want: "Mon Jan 01 0001 12:00 AM",
+			want: "2021-09-02",
 		},
 	}
 	for _, tt := range tests {

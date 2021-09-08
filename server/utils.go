@@ -79,7 +79,13 @@ func parseTime(input string) string {
 	if len(input) > 5 {
 		layout := "Mon Jan 02 2006 3:04 PM"
 		t, _ := time.Parse(time.RFC3339, input)
-		return t.Format(layout)
+		output := t.Format(layout)
+		if output == "Mon Jan 01 0001 12:00 AM" {
+			// If the input is not in the RFC3339 format, return input as is
+			return input
+		} else {
+			return output
+		}
 	} else {
 		return "-"
 	}

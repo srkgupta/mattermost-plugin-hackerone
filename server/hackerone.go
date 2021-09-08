@@ -166,14 +166,6 @@ type Stats struct {
 	PendingBountyCount int
 }
 
-func (p *Plugin) fetchStats() (Stats, error) {
-	var stats Stats
-	stats.NewCount = 2
-	stats.TriagedCount = 4
-	stats.PendingBountyCount = 10
-	return stats, nil
-}
-
 func (p *Plugin) fetchReport(reportId string) (Report, error) {
 	reportsEndpoint := "reports/" + reportId
 	resp, err := p.doHTTPRequest(http.MethodGet, reportsEndpoint, nil)

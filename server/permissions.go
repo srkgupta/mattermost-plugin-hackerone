@@ -93,6 +93,7 @@ func (p *Plugin) StorePermissions(perm []string) error {
 	if appErr := p.API.KVSet(PermissionsKey, b); appErr != nil {
 		return errors.Wrap(appErr, "could not store permissions in KV store")
 	}
+
 	return nil
 }
 
