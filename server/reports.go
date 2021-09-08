@@ -38,7 +38,7 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	if len(split) > 0 {
 		state = split[0]
 		allowedStates := []string{"new", "triaged", "needs-more-info", "bounty", "disclosure", "disclosed", "resolved"}
-		if !p.contains(allowedStates, state) {
+		if !contains(allowedStates, state) {
 			msg := "Incorrect filter option applied. Please select a valid option from the autocomplete."
 			return p.sendEphemeralResponse(args, msg), nil
 		}
@@ -50,7 +50,7 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	filters := make(map[string]string)
 	title := ""
 	hackeroneStates := []string{"new", "triaged", "needs-more-info", "resolved"}
-	if p.contains(hackeroneStates, state) {
+	if contains(hackeroneStates, state) {
 		filters["state"] = state
 		title = "Displaying reports with the state: `" + state + "`"
 	} else if state == "bounty" {
@@ -102,7 +102,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 		},
 		{
 			Title: "Created At",
-			Value: p.parseTime(report.Attributes.CreatedAt),
+			Value: parseTime(report.Attributes.CreatedAt),
 			Short: true,
 		},
 	}
@@ -110,7 +110,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 	if len(report.Attributes.TriagedAt) > 1 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Triaged At",
-			Value: p.parseTime(report.Attributes.TriagedAt),
+			Value: parseTime(report.Attributes.TriagedAt),
 			Short: true,
 		},
 		)
@@ -119,7 +119,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 	if len(report.Attributes.BountyAwardedAt) > 1 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Bounty Awarded At",
-			Value: p.parseTime(report.Attributes.BountyAwardedAt),
+			Value: parseTime(report.Attributes.BountyAwardedAt),
 			Short: true,
 		},
 		)
@@ -128,7 +128,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 	if len(report.Attributes.ClosedAt) > 1 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Closed At",
-			Value: p.parseTime(report.Attributes.ClosedAt),
+			Value: parseTime(report.Attributes.ClosedAt),
 			Short: true,
 		},
 		)
@@ -137,7 +137,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 	if len(report.Attributes.DisclosedAt) > 1 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Disclosed At",
-			Value: p.parseTime(report.Attributes.DisclosedAt),
+			Value: parseTime(report.Attributes.DisclosedAt),
 			Short: true,
 		},
 		)

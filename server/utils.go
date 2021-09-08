@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/json"
-	"net/http"
+	"time"
 
 	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/pkg/errors"
 )
 
 // Plugin utils
@@ -68,26 +66,21 @@ func (p *Plugin) sendEphemeralResponse(args *model.CommandArgs, message string) 
 	return &model.CommandResponse{}
 }
 
-// HTTP Utils below
-
-func (p *Plugin) respondAndLogErr(w http.ResponseWriter, code int, err error) {
-	http.Error(w, err.Error(), code)
-	p.API.LogError(err.Error())
+func contains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
 }
 
-func (p *Plugin) respondJSON(w http.ResponseWriter, obj interface{}) {
-	data, err := json.Marshal(obj)
-	if err != nil {
-		p.respondAndLogErr(w, http.StatusInternalServerError, errors.WithMessage(err, "failed to marshal response"))
-		return
+func parseTime(input string) string {
+	if len(input) > 5 {
+		layout := "Mon Jan 02 2006 3:04 PM"
+		t, _ := time.Parse(time.RFC3339, input)
+		return t.Format(layout)
+	} else {
+		return "-"
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(data)
-	if err != nil {
-		p.respondAndLogErr(w, http.StatusInternalServerError, errors.WithMessage(err, "failed to write response"))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }

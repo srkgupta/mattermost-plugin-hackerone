@@ -175,9 +175,6 @@ test: webapp/node_modules
 ifneq ($(HAS_SERVER),)
 	$(GO) test -v $(GO_TEST_FLAGS) ./server/...
 endif
-ifneq ($(HAS_WEBAPP),)
-	cd webapp && $(NPM) run test;
-endif
 ifneq ($(wildcard ./build/sync/plan/.),)
 	cd ./build/sync && $(GO) test -v $(GO_TEST_FLAGS) ./...
 endif

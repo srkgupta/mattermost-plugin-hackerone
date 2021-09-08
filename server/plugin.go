@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -100,20 +99,6 @@ func (p *Plugin) getHackeroneToUsernameMapping(hackeroneUsername string) string 
 func (p *Plugin) getHackeroneToUserIDMapping(hackeroneUsername string) string {
 	userID, _ := p.API.KVGet(hackeroneUsername + hackeroneUsernameKey)
 	return string(userID)
-}
-
-func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
-	user, err := p.API.GetUser(userID)
-	if err != nil {
-		return false, fmt.Errorf(
-			"failed to obtain information about user `%s`: %w", userID, err)
-	}
-	if strings.Contains(user.Roles, "system_admin") {
-		p.API.LogInfo(
-			fmt.Sprintf("UserID `%s` is authorized basing on the sysadmin role membership", userID))
-		return true, nil
-	}
-	return false, nil
 }
 
 // See https://developers.mattermost.com/extend/plugins/server/reference/
