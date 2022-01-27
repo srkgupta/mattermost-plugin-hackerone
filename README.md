@@ -113,10 +113,10 @@ This action allows you to get list of reports from Hackerone based on the filter
 Following filter options are currently available:
 
 * **new**               - Fetches new reports from Hackerone.
-* **triaged**           - Fetches triaged reports from Hackerone
+* **triaged**           - Fetches triaged reports from Hackerone.
 * **needs-more-info**   - Fetches reports which requires more information.
 * **bounty**            - Fetches reports that is triaged & is awaiting for a bounty to be rewarded.
-* **disclosure**        - Fetches reports that the researchers have requested for public disclosure
+* **disclosure**        - Fetches reports that the researchers have requested for public disclosure.
 * **disclosed**         - Fetches reports that have been disclosed.
 * **resolved**          - Fetches reports that have been resolved.
 
