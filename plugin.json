@@ -53,7 +53,7 @@
                 "key": "HackeroneSLAPollIntervalSeconds",
                 "display_name": "SLA Poll Interval (in seconds):",
                 "type": "number",
-                "help_text": "Interval at which the plugin will check for missed SLA deadlines. Default: 86400 seconds.",
+                "help_text": "Interval at which the plugin will check for missed SLA deadlines. Default: 86400 seconds. Minimum: 3600 seconds.",
                 "placeholder": "Seconds",
                 "default": 86400    
             },

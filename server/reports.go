@@ -17,19 +17,19 @@ func (p *Plugin) executeReport(args *model.CommandArgs, split []string) (*model.
 	if 0 >= len(split) {
 		msg := "Report Id should be specified while fetching the report information"
 		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		reportId := split[0]
-		report, err := p.fetchReport(reportId)
-		if err != nil {
-			msg := fmt.Sprintf("Something went wrong while getting the report from Hackerone API. Error: %s\n", err.Error())
-			return p.sendEphemeralResponse(args, msg), nil
-		} else {
-			postAttachments := []*model.SlackAttachment{}
-			attachment := p.getReportAttachment(report, true)
-			postAttachments = append(postAttachments, attachment)
-			_ = p.sendPost(args, "", postAttachments)
-		}
 	}
+
+	reportId := split[0]
+	report, err := p.fetchReport(reportId)
+	if err != nil {
+		msg := fmt.Sprintf("Something went wrong while getting the report from Hackerone API. Error: %s\n", err.Error())
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+
+	postAttachments := []*model.SlackAttachment{}
+	attachment := p.getReportAttachment(report, true)
+	postAttachments = append(postAttachments, attachment)
+	_ = p.sendPost(args, "", postAttachments)
 	return &model.CommandResponse{}, nil
 }
 
@@ -71,19 +71,19 @@ func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model
 	if err != nil {
 		msg := fmt.Sprintf("Something went wrong while getting the reports from Hackerone API. Error: %s\n", err.Error())
 		return p.sendEphemeralResponse(args, msg), nil
-	} else {
-		reportString := "#### " + title + "\n\n"
-		if len(reports) > 0 {
-			postAttachments := []*model.SlackAttachment{}
-			for _, report := range reports {
-				attachment := p.getReportAttachment(report, false)
-				postAttachments = append(postAttachments, attachment)
-			}
-			_ = p.sendPost(args, reportString, postAttachments)
-		} else {
-			msg := "No reports found matching the filter criteria you have specified."
-			return p.sendEphemeralResponse(args, reportString+msg), nil
+	}
+
+	reportString := "#### " + title + "\n\n"
+	if len(reports) > 0 {
+		postAttachments := []*model.SlackAttachment{}
+		for _, report := range reports {
+			attachment := p.getReportAttachment(report, false)
+			postAttachments = append(postAttachments, attachment)
 		}
+		_ = p.sendPost(args, reportString, postAttachments)
+	} else {
+		msg := "No reports found matching the filter criteria you have specified."
+		return p.sendEphemeralResponse(args, reportString+msg), nil
 	}
 	return &model.CommandResponse{}, nil
 }

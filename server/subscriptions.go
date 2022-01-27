@@ -51,10 +51,6 @@ func (p *Plugin) GetSubscriptionsByChannel(channelID string) ([]*Subscription, e
 		}
 	}
 
-	// sort.Slice(filteredSubs, func(i, j int) bool {
-	// 	return filteredSubs[i] < filteredSubs[j]
-	// })
-
 	return filteredSubs, nil
 }
 

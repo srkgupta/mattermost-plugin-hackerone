@@ -66,7 +66,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		return p.sendEphemeralResponse(args, msg), nil
 	}
 	if !isAllowed {
-		msg = "`/hackerone` commands can only be executed by a system administrator or a list of users whitelisted. Please ask your system administrator to run the command, eg: `/hackerone permissions add @user1` to whitelist a specific user."
+		msg = "`/hackerone` commands can only be executed by a system administrator or a list of whitelisted users. Please ask your system administrator to run the command, eg: `/hackerone permissions add @user1` to whitelist a specific user."
 		return p.sendEphemeralResponse(args, msg), nil
 	}
 

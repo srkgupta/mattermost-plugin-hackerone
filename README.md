@@ -9,7 +9,7 @@ A Hackerone plugin for Mattermost. This plugin allows users to subscribe to Hack
 This plugin allows you to perform following actions on Mattermost:
 
 * Fetch reports from Hackerone as per the filter criteria specified.
-* Get detailed info about a Hackerone report
+* Get detailed info about a Hackerone report.
 * Receive notifications about any new activity on any of your program's Hackerone report.
 * Receive notifications when any of your program's report reaches a configured SLA deadline.
 
@@ -41,8 +41,8 @@ This guide is for Mattermost System Admins setting up the Hackerone plugin and M
 
 ### Important notice
 
-* Responses of the slash subcommands `reports` and `report` will be visible to all users on the channel where the slash command was executed
-* If you are a Hackerone admin/user and think there is something this plugin lacks or something that it does could be done the other way around, let us know!
+* Responses of the slash subcommands `reports` and `report` will be visible to all users on the channel where the slash command was executed.
+* If you are a Hackerone admin/user and think there is something this plugin lacks, let us know!
 We are trying to develop this plugin based on users' needs.
 * If there is a certain feature you or your team needs, open up an issue, and explain your needs.
 We will be happy to help.
@@ -112,13 +112,13 @@ This action allows you to get list of reports from Hackerone based on the filter
 
 Following filter options are currently available:
 
-* **new** - Fetches new reports from Hackerone.
-* **triaged** - Fetches triaged reports from Hackerone
-* **needs-more-info** - Fetches reports which requires more information.
-* **bounty** - Fetches reports that is triaged & is awaiting for a bounty to be rewarded.
-* **disclosure** - Fetches reports that the researchers have requested for public disclosure
-* **disclosed** - Fetches reports that have been disclosed.
-* **resolved** - Fetches reports that have been resolved.
+* **new**               - Fetches new reports from Hackerone.
+* **triaged**           - Fetches triaged reports from Hackerone
+* **needs-more-info**   - Fetches reports which requires more information.
+* **bounty**            - Fetches reports that is triaged & is awaiting for a bounty to be rewarded.
+* **disclosure**        - Fetches reports that the researchers have requested for public disclosure
+* **disclosed**         - Fetches reports that have been disclosed.
+* **resolved**          - Fetches reports that have been resolved.
 
 ##### report
 
