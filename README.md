@@ -49,7 +49,7 @@ We will be happy to help.
 
 ## Installing the plugin
 
-1. Download the latest stable version of the plugin from the [releases page](https://github.com/srkgupta/mattermost-plugin-hackerone/releases)
+1. Download the latest stable version of the plugin from the releases page
 2. In Mattermost, go to **System Console → Plugins → Management**
 3. Upload the plugin in the **Upload Plugin** section
 4. Configure the plugin before you enable it :arrow_down:

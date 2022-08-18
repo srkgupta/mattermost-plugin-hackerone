@@ -5,19 +5,19 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/pkg/errors"
 )
 
 const (
 	hackeroneCommand  = "/hackerone"
-	helpCmdKey        = "help"
-	statsCmdKey       = "stats"
-	permissionsCmdKey = "permissions"
-	reportCmdKey      = "report"
-	reportsCmdKey     = "reports"
-	subscribeCmdKey   = "subscriptions"
+	cmdHelpKey        = "help"
+	cmdStatsKey       = "stats"
+	cmdPermissionsKey = "permissions"
+	cmdReportKey      = "report"
+	cmdReportsKey     = "reports"
+	cmdSubscribeKey   = "subscriptions"
 	cmdError          = "Command Error"
 )
 
@@ -51,11 +51,11 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	split := strings.Fields(args.Command)
 	command := ""
 
-	if 1 < len(split) {
+	if len(split) > 1 {
 		command = split[1]
 	}
 
-	if command == helpCmdKey {
+	if command == cmdHelpKey {
 		return p.sendEphemeralResponse(args, helpText), nil
 	}
 
@@ -71,13 +71,13 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	switch command {
-	case reportCmdKey:
+	case cmdReportKey:
 		return p.executeReport(args, split[2:])
-	case reportsCmdKey:
+	case cmdReportsKey:
 		return p.executeReports(args, split[2:])
-	case subscribeCmdKey:
+	case cmdSubscribeKey:
 		return p.executeSubscriptions(args, split[2:])
-	case permissionsCmdKey:
+	case cmdPermissionsKey:
 		return p.executePermissions(args, split[2:])
 	default:
 		return p.sendEphemeralResponse(args, helpText), nil
@@ -88,10 +88,10 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 	hackerone := model.NewAutocompleteData("hackerone", "[command]", "Available commands: help, reports, report, subscriptions, permissions")
 	note := " NOTE: Response will be visible to all in this channel."
 
-	help := model.NewAutocompleteData(helpCmdKey, "", "Display Slash Command help text")
+	help := model.NewAutocompleteData(cmdHelpKey, "", "Display Slash Command help text")
 	hackerone.AddCommand(help)
 
-	reports := model.NewAutocompleteData(reportsCmdKey, "[filters]", "Fetches reports from Hackerone as per the filter criteria specified."+note)
+	reports := model.NewAutocompleteData(cmdReportsKey, "[filters]", "Fetches reports from Hackerone as per the filter criteria specified."+note)
 
 	newReports := model.NewAutocompleteData("new", "", "Fetches new reports from Hackerone."+note)
 	reports.AddCommand(newReports)
@@ -110,10 +110,10 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 
 	hackerone.AddCommand(reports)
 
-	report := model.NewAutocompleteData(reportCmdKey, "[report-id]", "Gets detailed info about a Hackerone report."+note)
+	report := model.NewAutocompleteData(cmdReportKey, "[report-id]", "Gets detailed info about a Hackerone report."+note)
 	hackerone.AddCommand(report)
 
-	subscriptions := model.NewAutocompleteData(subscribeCmdKey, "[command]", "Available commands: list, add, delete")
+	subscriptions := model.NewAutocompleteData(cmdSubscribeKey, "[command]", "Available commands: list, add, delete")
 
 	subscribeAdd := model.NewAutocompleteData("add", "<report_id>(optional)", "The current channel will receive notifications when there are any activity on your Hackerone program. If report_id is not specified, it will subscribe to all the Hackerone reports")
 	subscriptions.AddCommand(subscribeAdd)
@@ -126,7 +126,7 @@ func getAutocompleteData(config *configuration) *model.AutocompleteData {
 
 	hackerone.AddCommand(subscriptions)
 
-	permissions := model.NewAutocompleteData(permissionsCmdKey, "[command]", "Available commands: list, allow, remove")
+	permissions := model.NewAutocompleteData(cmdPermissionsKey, "[command]", "Available commands: list, allow, remove")
 
 	permissionAdd := model.NewAutocompleteData("add", "@username", "Whitelist the user to run the Hackerone slash commands. "+permissionNote)
 	permissions.AddCommand(permissionAdd)

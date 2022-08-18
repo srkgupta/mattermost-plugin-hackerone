@@ -4,8 +4,11 @@
 package main
 
 import (
-	"fmt"
+	"sync"
 	"time"
+
+	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -14,6 +17,17 @@ const (
 )
 
 type TaskFunc func()
+
+type JobManager struct {
+	registeredJobs sync.Map
+	activeJobs     sync.Map
+	papi           cluster.JobPluginAPI
+}
+
+type RegisteredJob struct {
+	id       string
+	interval time.Duration
+}
 
 type ScheduledTask struct {
 	Name      string        `json:"name"`
@@ -26,63 +40,33 @@ type ScheduledTask struct {
 
 func (p *Plugin) createHackeroneRecurring() {
 	interval := time.Duration(p.getConfiguration().HackeronePollIntervalSeconds) * time.Second
-	newActivityTask := createTask(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval, true)
-	p.scheduledTasks = append(p.scheduledTasks, newActivityTask)
+	newActivityJob, _ := p.createNewJob(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval)
+	if newActivityJob != nil {
+		p.scheduledJobs = append(p.scheduledJobs, newActivityJob)
+	}
+
 	slaInterval := time.Duration(p.getConfiguration().HackeroneSLAPollIntervalSeconds) * time.Second
-	missedDeadlineTask := createTask(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval, true)
-	p.scheduledTasks = append(p.scheduledTasks, missedDeadlineTask)
+	missedDeadlineJob, _ := p.createNewJob(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval)
+	if missedDeadlineJob != nil {
+		p.scheduledJobs = append(p.scheduledJobs, missedDeadlineJob)
+	}
+
 }
 
 func (p *Plugin) cancelHackeroneRecurring() {
-	for _, t := range p.scheduledTasks {
-		t.Cancel()
+	for _, job := range p.scheduledJobs {
+		job.Close()
 	}
-	p.scheduledTasks = []*ScheduledTask{}
+	p.scheduledJobs = []*cluster.Job{}
 }
 
-func createTask(name string, function TaskFunc, interval time.Duration, recurring bool) *ScheduledTask {
-	task := &ScheduledTask{
-		Name:      name,
-		Interval:  interval,
-		Recurring: recurring,
-		function:  function,
-		cancel:    make(chan struct{}),
-		cancelled: make(chan struct{}),
+func (p *Plugin) createNewJob(name string, function TaskFunc, interval time.Duration) (*cluster.Job, error) {
+
+	job, cronErr := cluster.Schedule(p.API, name, cluster.MakeWaitForRoundedInterval(interval), function)
+
+	if cronErr != nil {
+		return nil, errors.Wrap(cronErr, "failed to schedule background job")
 	}
 
-	go func() {
-		defer close(task.cancelled)
-
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				function()
-			case <-task.cancel:
-				return
-			}
-
-			if !task.Recurring {
-				break
-			}
-		}
-	}()
-
-	return task
-}
-
-func (task *ScheduledTask) Cancel() {
-	close(task.cancel)
-	<-task.cancelled
-}
-
-func (task *ScheduledTask) String() string {
-	return fmt.Sprintf(
-		"%s\nInterval: %s\nRecurring: %t\n",
-		task.Name,
-		task.Interval.String(),
-		task.Recurring,
-	)
+	return job, nil
 }

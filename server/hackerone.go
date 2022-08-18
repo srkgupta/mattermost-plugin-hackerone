@@ -19,17 +19,21 @@ func (p *Plugin) doHTTPRequest(method string, url string, body io.Reader) (*http
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(p.getConfiguration().HackeroneApiIdentifier, p.getConfiguration().HackeroneApiKey)
 	if err != nil {
+		p.API.LogWarn("bad request for url:" + url)
 		return nil, errors.Wrap(err, "bad request for url:"+url)
 	}
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
+		p.API.LogWarn("connection problem for url:" + url)
 		return nil, errors.Wrap(err, "connection problem for url:"+url)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		_ = resp.Body.Close()
-		return nil, errors.New("non-ok status code for url:" + url)
+		msg := fmt.Sprintf("non-ok %d status code for url: %s", resp.StatusCode, url)
+		p.API.LogWarn(msg)
+		return nil, errors.New(msg)
 	}
 	return resp, err
 }
@@ -38,7 +42,7 @@ type Activities struct {
 	Activities []Activity `json:"data"`
 	Meta       struct {
 		MaxUpdatedAt string `json:"max_updated_at"`
-	}
+	} `json:"meta"`
 }
 
 type Activity struct {
@@ -47,7 +51,7 @@ type Activity struct {
 		CreatedAt string `json:"created_at"`
 		Internal  bool   `json:"internal"`
 		Message   string `json:"message"`
-	}
+	} `json:"attributes"`
 	ActivityType  string `json:"type"`
 	Relationships struct {
 		Actor struct {
@@ -58,10 +62,10 @@ type Activity struct {
 					ProfilePicture struct {
 						Photo string `json:"260x260"`
 					}
-				}
-			}
-		}
-	}
+				} `json:"attributes"`
+			} `json:"data"`
+		} `json:"actor"`
+	} `json:"relationships"`
 }
 
 func (p *Plugin) fetchActivities(count string, last_updated_at string) (Activities, error) {
@@ -89,7 +93,7 @@ func (p *Plugin) fetchActivities(count string, last_updated_at string) (Activiti
 		p.API.LogWarn(errorMsg, "error", err.Error())
 		return Activities{}, errors.Wrap(err, errorMsg)
 	}
-	return response, errors.Wrap(err, errorMsg)
+	return response, nil
 }
 
 type Reports struct {
@@ -122,10 +126,10 @@ type Report struct {
 					ProfilePicture struct {
 						Photo string `json:"260x260"`
 					}
-				}
-			}
-		}
-	}
+				} `json:"attributes"`
+			} `json:"data"`
+		} `json:"reporter"`
+	} `json:"relationships"`
 }
 
 func (p *Plugin) fetchReports(filters map[string]string) ([]Report, error) {
@@ -157,13 +161,13 @@ func (p *Plugin) fetchReports(filters map[string]string) ([]Report, error) {
 		p.API.LogWarn("Something went wrong while getting the reports from Hackerone API", "error", err.Error())
 		return nil, err
 	}
-	return response.Reports, err
+	return response.Reports, nil
 }
 
 type Stats struct {
-	NewCount           int
-	TriagedCount       int
-	PendingBountyCount int
+	NewCount           int `json:"new_count"`
+	TriagedCount       int `json:"triaged_count"`
+	PendingBountyCount int `json:"pending_bounty_count"`
 }
 
 func (p *Plugin) fetchReport(reportId string) (Report, error) {

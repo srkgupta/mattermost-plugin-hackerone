@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-api/cluster"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/pkg/errors"
 )
 
@@ -37,7 +39,7 @@ type Plugin struct {
 
 	httpClient http.Client
 
-	scheduledTasks []*ScheduledTask
+	scheduledJobs []*cluster.Job
 }
 
 // ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.
@@ -49,8 +51,8 @@ func (p *Plugin) OnActivate() error {
 	if p.API.GetConfig().ServiceSettings.SiteURL == nil {
 		return errors.New("siteURL is not set. Please set a siteURL and restart the plugin")
 	}
-
-	botID, err := p.Helpers.EnsureBot(&model.Bot{
+	client := pluginapi.NewClient(p.API, p.Driver)
+	botID, err := client.Bot.EnsureBot(&model.Bot{
 		Username:    "hackerone",
 		DisplayName: "Hackerone",
 		Description: "Created by the Hackerone plugin.",

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 )
 
@@ -60,46 +60,55 @@ func (p *Plugin) activityTemplate(activity Activity) string {
 
 func (p *Plugin) notifyNewActivity() error {
 	subs, _ := p.GetSubscriptions()
-	if len(subs) > 0 {
-		last_updated_at, err := p.GetActivityLastKey()
-		if err != nil {
-			p.API.LogWarn("Error while notifying new activity", "error", err.Error())
-			return errors.Wrap(err, "error while notifying new activity")
-		}
-		activities, err := p.fetchActivities("100", string(last_updated_at))
-		if err != nil {
-			p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
-			return errors.Wrap(err, "Something went wrong while getting the activities from Hackerone API.")
-		} else {
-			if len(activities.Activities) > 0 {
-				for _, activity := range activities.Activities {
-					activitiesListString := p.activityTemplate(activity)
-					postAttachments := []*model.SlackAttachment{}
-					report, err := p.fetchReport(activity.Attributes.ReportID)
-					if err != nil {
-						p.API.LogWarn("Something went wrong while getting the report from Hackerone API", "error", err.Error())
-					} else {
-						var attachment = &model.SlackAttachment{}
-						if activity.ActivityType == "activity-bug-filed" {
-							attachment = p.getReportAttachment(report, true)
-						} else {
-							attachment = p.getReportAttachment(report, false)
-						}
-						postAttachments = append(postAttachments, attachment)
-					}
-					for _, v := range subs {
-						if (len(v.ReportID) == 0) || (v.ReportID == activity.Attributes.ReportID) {
-							p.sendPostByChannelId(v.ChannelID, activitiesListString, postAttachments)
-						}
-					}
-				}
+	if len(subs) == 0 {
+		return nil
+	}
 
-				if len(activities.Meta.MaxUpdatedAt) > 1 {
-					p.StoreActivityLastKey(activities.Meta.MaxUpdatedAt)
-				}
+	last_updated_at, err := p.GetActivityLastKey()
+	if err != nil {
+		p.API.LogWarn("Error while notifying new activity", "error", err.Error())
+		return errors.Wrap(err, "error while notifying new activity")
+	}
+	activities, err := p.fetchActivities("100", last_updated_at)
+	if err != nil {
+		p.API.LogWarn("Something went wrong while getting the activities from Hackerone API", "error", err.Error())
+		return errors.Wrap(err, "Something went wrong while getting the activities from Hackerone API.")
+	}
+
+	if len(activities.Activities) == 0 {
+		return nil
+	}
+
+	// do not notify all previous activities, store the last activity timestamp and only display new activities
+	if last_updated_at == "1970-01-01T00:00:00Z" {
+		p.StoreActivityLastKey(activities.Meta.MaxUpdatedAt)
+		return nil
+	}
+
+	for _, activity := range activities.Activities {
+		activitiesListString := p.activityTemplate(activity)
+		postAttachments := []*model.SlackAttachment{}
+		report, err := p.fetchReport(activity.Attributes.ReportID)
+		if err != nil {
+			p.API.LogWarn("Something went wrong while getting the report from Hackerone API", "error", err.Error())
+		} else {
+			var attachment = &model.SlackAttachment{}
+			if activity.ActivityType == "activity-bug-filed" {
+				attachment = p.getReportAttachment(report, true)
+			} else {
+				attachment = p.getReportAttachment(report, false)
+			}
+			postAttachments = append(postAttachments, attachment)
+		}
+		for _, v := range subs {
+			if (len(v.ReportID) == 0) || (v.ReportID == activity.Attributes.ReportID) {
+				p.sendPostByChannelId(v.ChannelID, activitiesListString, postAttachments)
 			}
 		}
+	}
 
+	if len(activities.Meta.MaxUpdatedAt) > 0 {
+		p.StoreActivityLastKey(activities.Meta.MaxUpdatedAt)
 	}
 	return nil
 }

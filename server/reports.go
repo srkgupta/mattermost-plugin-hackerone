@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/pkg/errors"
 )
 
@@ -14,7 +14,7 @@ const (
 )
 
 func (p *Plugin) executeReport(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
-	if 0 >= len(split) {
+	if len(split) <= 0 {
 		msg := "Report Id should be specified while fetching the report information"
 		return p.sendEphemeralResponse(args, msg), nil
 	}
@@ -35,15 +35,15 @@ func (p *Plugin) executeReport(args *model.CommandArgs, split []string) (*model.
 
 func (p *Plugin) executeReports(args *model.CommandArgs, split []string) (*model.CommandResponse, *model.AppError) {
 	state := ""
-	if len(split) > 0 {
-		state = split[0]
-		allowedStates := []string{"new", "triaged", "needs-more-info", "bounty", "disclosure", "disclosed", "resolved"}
-		if !contains(allowedStates, state) {
-			msg := "Incorrect filter option applied. Please select a valid option from the autocomplete."
-			return p.sendEphemeralResponse(args, msg), nil
-		}
-	} else {
+	if len(split) <= 0 {
 		msg := "Filter not provided. Please select a valid option from the autocomplete."
+		return p.sendEphemeralResponse(args, msg), nil
+	}
+
+	state = split[0]
+	allowedStates := []string{"new", "triaged", "needs-more-info", "bounty", "disclosure", "disclosed", "resolved"}
+	if !contains(allowedStates, state) {
+		msg := "Incorrect filter option applied. Please select a valid option from the autocomplete."
 		return p.sendEphemeralResponse(args, msg), nil
 	}
 
@@ -107,7 +107,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 		},
 	}
 
-	if len(report.Attributes.TriagedAt) > 1 {
+	if len(report.Attributes.TriagedAt) > 0 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Triaged At",
 			Value: parseTime(report.Attributes.TriagedAt),
@@ -116,7 +116,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 		)
 	}
 
-	if len(report.Attributes.BountyAwardedAt) > 1 {
+	if len(report.Attributes.BountyAwardedAt) > 0 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Bounty Awarded At",
 			Value: parseTime(report.Attributes.BountyAwardedAt),
@@ -125,7 +125,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 		)
 	}
 
-	if len(report.Attributes.ClosedAt) > 1 {
+	if len(report.Attributes.ClosedAt) > 0 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Closed At",
 			Value: parseTime(report.Attributes.ClosedAt),
@@ -134,7 +134,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 		)
 	}
 
-	if len(report.Attributes.DisclosedAt) > 1 {
+	if len(report.Attributes.DisclosedAt) > 0 {
 		fields = append(fields, &model.SlackAttachmentField{
 			Title: "Disclosed At",
 			Value: parseTime(report.Attributes.DisclosedAt),
@@ -172,7 +172,7 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 func generateButton(name string, urlAction string, context map[string]interface{}) *model.PostAction {
 	return &model.PostAction{
 		Name: name,
-		Type: model.POST_ACTION_TYPE_BUTTON,
+		Type: model.PostActionTypeButton,
 		Integration: &model.PostActionIntegration{
 			URL:     fmt.Sprintf("/plugins/mattermost-plugin-hackerone/%s", urlAction),
 			Context: context,
@@ -186,30 +186,36 @@ func (p *Plugin) notifyReports(filters map[string]string, title string, descript
 	if err != nil {
 		p.API.LogWarn("Error while fetching Reports from Hackerone", "error", err.Error())
 		return errors.Wrap(err, "error while notifying missed deadline reports")
-	} else if len(reports) > 0 {
-		reportString := "#### " + title + "\n" + description + "\n\n"
-		for _, s := range subs {
-			found := false
-			postAttachments := []*model.SlackAttachment{}
-			for _, report := range reports {
-				// If subscription has a report Id
-				if len(s.ReportID) > 0 {
-					// Notify only if subscription's report ID is equal to report fetched from Hackerone
-					if s.ReportID == report.Id {
-						attachment := p.getReportAttachment(report, false)
-						postAttachments = append(postAttachments, attachment)
-						found = true
-						break
-					}
-				} else {
+	}
+
+	if len(reports) == 0 {
+		return nil
+	}
+
+	reportString := "#### " + title + "\n" + description + "\n\n"
+	// Each subscription can either be for a single reportId or for all reports
+	for _, s := range subs {
+		found := false
+		postAttachments := []*model.SlackAttachment{}
+		for _, report := range reports {
+			// If subscription has a report Id, only notify the subscription's report ID
+			if len(s.ReportID) > 0 {
+				// Notify only if subscription's report ID is equal to report fetched from Hackerone
+				if s.ReportID == report.Id {
 					attachment := p.getReportAttachment(report, false)
 					postAttachments = append(postAttachments, attachment)
 					found = true
+					break
 				}
+			} else {
+				// Else it means it is subscribed to receive all reports info
+				attachment := p.getReportAttachment(report, false)
+				postAttachments = append(postAttachments, attachment)
+				found = true
 			}
-			if found {
-				p.sendPostByChannelId(s.ChannelID, reportString, postAttachments)
-			}
+		}
+		if found {
+			p.sendPostByChannelId(s.ChannelID, reportString, postAttachments)
 		}
 	}
 	return nil
@@ -241,13 +247,14 @@ func getDeadlineReportFilter(filterType string, sla int) map[string]string {
 	now := time.Now().UTC()
 	min_created_at := now.AddDate(0, 0, -sla)
 	filters["created_at__lt"] = min_created_at.Format(time.RFC3339)
-	if filterType == "new" {
+	switch filterType {
+	case "new":
 		filters["state"] = "new"
 		filters["triaged_at__null"] = "true"
-	} else if filterType == "bounty" {
+	case "bounty":
 		filters["state"] = "triaged"
 		filters["bounty_awarded_at__null"] = "true"
-	} else if filterType == "triaged" {
+	case "triaged":
 		filters["state"] = "triaged"
 		filters["bounty_awarded_at__null"] = "false"
 		filters["closed_at__null"] = "false"

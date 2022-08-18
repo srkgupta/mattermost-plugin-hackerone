@@ -2,12 +2,12 @@
     "id": "mattermost-plugin-hackerone",
     "name": "Hackerone Plugin",
     "description": "Hackerone plugin for Mattermost.",
-    "homepage_url": "https://github.com/srkgupta/mattermost-plugin-hackerone",
+    "homepage_url": "https://github.com/mattermost/mattermost-plugin-hackerone",
     "support_url": "https://github.com/mattermost/mattermost-plugin-hackerone/issues",
     "release_notes_url": "https://github.com/mattermost/mattermost-plugin-hackerone/releases/tag/v1.0.0",
     "icon_path": "assets/icon.svg",
     "version": "1.0.0",
-    "min_server_version": "5.12.0",
+    "min_server_version": "5.37.0",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
