@@ -155,9 +155,9 @@ There are 2 ways of running the `subscriptions add` slash command:
 
 This action allows you to list all the channels which has been set to receive all the Hackerone notifications.
 
-###### subscriptions delete [index]
+###### subscriptions delete [subscriptionId]
 
-This action allows you to delete the specified subscription and hence that specific channel will stop receiving any notifications for any events from Hackerone. You can run the command `/hackerone subscriptions list` to get the index position. Note: The index position starts with 1.
+This action allows you to delete the specified subscription and hence that specific channel will stop receiving any notifications for any events from Hackerone. You can run the command `/hackerone subscriptions list` to get the subscriptionId. 
 
 ##### permissions
 
