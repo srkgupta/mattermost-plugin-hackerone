@@ -42,7 +42,7 @@ func (p *Plugin) createHackeroneRecurring() {
 	interval := time.Duration(p.getConfiguration().HackeronePollIntervalSeconds) * time.Second
 	newActivityJob, err := p.createNewJob(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval)
 	if err != nil {
-		p.API.LogError("Error while scheduling Hackerone job to notify new activity", err.Error())
+		p.API.LogError("Error while scheduling Hackerone job to notify new activity", "err", err.Error())
 	}
 	if newActivityJob != nil {
 		p.scheduledJobs = append(p.scheduledJobs, newActivityJob)
@@ -51,7 +51,7 @@ func (p *Plugin) createHackeroneRecurring() {
 	slaInterval := time.Duration(p.getConfiguration().HackeroneSLAPollIntervalSeconds) * time.Second
 	missedDeadlineJob, err := p.createNewJob(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval)
 	if err != nil {
-		p.API.LogError("Error while scheduling Hackerone job to notify missed deadlines", err.Error())
+		p.API.LogError("Error while scheduling Hackerone job to notify missed deadlines", "err", err.Error())
 	}
 	if missedDeadlineJob != nil {
 		p.scheduledJobs = append(p.scheduledJobs, missedDeadlineJob)
