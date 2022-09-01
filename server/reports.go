@@ -151,12 +151,6 @@ func (p *Plugin) getReportAttachment(report Report, detailed bool) *model.SlackA
 		},
 		)
 	}
-	// actionContext := map[string]interface{}{
-	// 	contextReport: report.Id,
-	// }
-
-	// actions := []*model.PostAction{}
-	// actions = append(actions, generateButton("Trigger Incident", URLTrigger, actionContext))
 
 	return &model.SlackAttachment{
 		Title:      report.Attributes.Title,

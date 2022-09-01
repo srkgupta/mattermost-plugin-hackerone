@@ -40,13 +40,19 @@ type ScheduledTask struct {
 
 func (p *Plugin) createHackeroneRecurring() {
 	interval := time.Duration(p.getConfiguration().HackeronePollIntervalSeconds) * time.Second
-	newActivityJob, _ := p.createNewJob(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval)
+	newActivityJob, err := p.createNewJob(HackeroneNewActivity, func() { p.notifyNewActivity() }, interval)
+	if err != nil {
+		p.API.LogError("Error while scheduling Hackerone job to notify new activity", err.Error())
+	}
 	if newActivityJob != nil {
 		p.scheduledJobs = append(p.scheduledJobs, newActivityJob)
 	}
 
 	slaInterval := time.Duration(p.getConfiguration().HackeroneSLAPollIntervalSeconds) * time.Second
-	missedDeadlineJob, _ := p.createNewJob(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval)
+	missedDeadlineJob, err := p.createNewJob(HackeroneMissedDeadline, func() { p.notifyMissedDeadlineReports() }, slaInterval)
+	if err != nil {
+		p.API.LogError("Error while scheduling Hackerone job to notify missed deadlines", err.Error())
+	}
 	if missedDeadlineJob != nil {
 		p.scheduledJobs = append(p.scheduledJobs, missedDeadlineJob)
 	}

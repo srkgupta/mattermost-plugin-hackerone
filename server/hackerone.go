@@ -115,7 +115,7 @@ type Report struct {
 		DisclosedAt     string `json:"disclosed_at"`
 		SwagAt          string `json:"swag_awarded_at"`
 		Info            string `json:"vulnerability_information"`
-	}
+	} `json:"attributes"`
 	Id            string `json:"id"`
 	Relationships struct {
 		Reporter struct {
